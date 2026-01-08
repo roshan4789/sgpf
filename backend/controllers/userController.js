@@ -8,22 +8,29 @@ const generateToken = require('../utils/generateToken');
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  if (!email || !password) {
+    res.status(400);
+    throw new Error('Please provide both email and password');
+  }
+
+  // Allow login with Phone OR Email
+  const user = await User.findOne({ 
+    $or: [ { email: email }, { phone: email } ] 
+  });
 
   if (user && (await user.matchPassword(password))) {
-    console.log("✅ Login Successful for:", email);
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       phone: user.phone,
       isAdmin: user.isAdmin,
+      cart: user.cart,
       token: generateToken(user._id),
     });
   } else {
-    console.log("❌ Login Failed: Invalid Credentials");
     res.status(401);
-    throw new Error('Invalid email or password');
+    throw new Error('Invalid email/phone or password');
   }
 });
 
@@ -31,29 +38,49 @@ const authUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, phone, password } = req.body;
+  const { name, email, phone, password, isAdmin } = req.body;
 
-  console.log("📝 Registering:", { name, email, phone });
+  // 1. INPUT VALIDATION
+  if (!name || !email || !phone || !password) {
+    res.status(400);
+    throw new Error('Please fill in all fields');
+  }
 
-  // 1. Check if user exists
+  // Basic Email Validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error('Invalid email format');
+  }
+
+  // Phone Validation (Simple check)
+  if (phone.length < 10) {
+    res.status(400);
+    throw new Error('Phone number must be at least 10 digits');
+  }
+
+  // 2. CHECK FOR DUPLICATES
   const userExists = await User.findOne({ $or: [{ email }, { phone }] });
 
   if (userExists) {
-    console.log("❌ Registration Failed: User Already Exists");
     res.status(400);
-    throw new Error('User already exists');
+    if (userExists.email === email) {
+        throw new Error('User with this Email already exists');
+    } else {
+        throw new Error('User with this Phone already exists');
+    }
   }
 
-  // 2. Create User
+  // 3. CREATE USER
   const user = await User.create({
     name,
     email,
     phone,
     password,
+    isAdmin: isAdmin || false
   });
 
   if (user) {
-    console.log("✅ User Created!");
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -81,6 +108,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
       email: user.email,
       phone: user.phone,
       isAdmin: user.isAdmin,
+      addresses: user.addresses,
     });
   } else {
     res.status(404);
@@ -98,10 +126,12 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
+    if (req.body.cart) {
+      user.cart = req.body.cart;
+    }
     if (req.body.password) {
       user.password = req.body.password;
     }
-    // Add address if provided
     if (req.body.address) {
         user.addresses = user.addresses || [];
         user.addresses.push(req.body.address);
@@ -115,6 +145,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       isAdmin: updatedUser.isAdmin,
+      cart: updateUser.cart,
       token: generateToken(updatedUser._id),
     });
   } else {
