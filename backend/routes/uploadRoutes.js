@@ -1,31 +1,49 @@
+const path = require('path');
 const express = require('express');
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const router = express.Router();
 
-// 1. Config Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// 2. Setup Storage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'ecommerce_products', // Folder name in your Cloudinary Dashboard
-    allowed_formats: ['jpg', 'png', 'jpeg'],
+// 1. CONFIGURATION: Save locally to 'uploads/' folder
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, 'uploads/'); // Save to the 'uploads' folder in backend
+  },
+  filename(req, file, cb) {
+    // Rename file to prevent duplicates: fieldname-timestamp.ext
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
   },
 });
 
-const upload = multer({ storage });
+// 2. VALIDATION: Allow only Images
+function checkFileType(file, cb) {
+  const filetypes = /jpg|jpeg|png/;
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = filetypes.test(file.mimetype);
 
-// 3. The Route
+  if (extname && mimetype) {
+    return cb(null, true);
+  } else {
+    cb('Images only!');
+  }
+}
+
+// 3. INITIALIZE MULTER
+const upload = multer({
+  storage,
+  fileFilter: function (req, file, cb) {
+    checkFileType(file, cb);
+  },
+});
+
+// 4. ROUTE: POST /api/upload
 router.post('/', upload.single('image'), (req, res) => {
-  // Multer executes -> Uploads to Cloudinary -> Returns path in req.file.path
-  res.send(req.file.path);
+  if (req.file) {
+    // Return the path so the frontend can display it
+    // IMPORTANT: Note the backslash/forward slash handling
+    res.send(`/${req.file.path.replace(/\\/g, "/")}`);
+  } else {
+    res.status(400).send('No file uploaded');
+  }
 });
 
 module.exports = router;

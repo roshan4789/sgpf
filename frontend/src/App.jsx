@@ -283,6 +283,29 @@ export default function App() {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % banners.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
 
+  const uploadFileHandler = async (e) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      };
+      // Send to your new backend route
+      const { data } = await axios.post(`${API_URL}/api/upload`, formData, config);
+      
+      // Update the product form with the new path
+      setNewProduct({ ...newProduct, image: `${API_URL}${data}` });
+      showToast('Image Uploaded Successfully!', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Image Upload Failed', 'error');
+    }
+  };
+
   // --- VIEW RENDERERS ---
   const renderAdmin = () => (
       <div className="w-full px-6 md:px-12 py-8">
@@ -295,7 +318,8 @@ export default function App() {
                       <div className="space-y-3">
                           <input placeholder="Name" className="w-full p-2 border rounded" value={newProduct.name} onChange={e=>setNewProduct({...newProduct, name: e.target.value})} />
                           <input placeholder="Price" type="number" className="w-full p-2 border rounded" value={newProduct.price} onChange={e=>setNewProduct({...newProduct, price: e.target.value})} />
-                          <input placeholder="Image URL" className="w-full p-2 border rounded" value={newProduct.image} onChange={e=>setNewProduct({...newProduct, image: e.target.value})} />
+                          <input placeholder="Image URL" className="w-full p-2 border rounded mb-2" value={newProduct.image} onChange={e=>setNewProduct({...newProduct, image: e.target.value})} />
+                          <input type="file" onChange={uploadFileHandler} className="w-full text-sm text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"/>
                           <select className="w-full p-2 border rounded" value={newProduct.category} onChange={e=>setNewProduct({...newProduct, category: e.target.value})}>{Object.keys(CATEGORY_HIERARCHY).map(c=><option key={c} value={c}>{c}</option>)}</select>
                           <input placeholder="Stock" type="number" className="w-full p-2 border rounded" value={newProduct.countInStock} onChange={e=>setNewProduct({...newProduct, countInStock: e.target.value})} />
                           <Button onClick={handleAddProduct} className="w-full">Add Product</Button>

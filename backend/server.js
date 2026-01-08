@@ -1,5 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const path = require('path');
 
 // 1. LOAD ENV VARIABLES BEFORE ANYTHING ELSE
 dotenv.config(); 
@@ -8,7 +9,8 @@ const connectDB = require('./config/db');
 const productRoutes = require('./routes/productRoutes');
 const userRoutes = require('./routes/userRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
-const orderRoutes = require('./routes/orderRoutes'); 
+const orderRoutes = require('./routes/orderRoutes');
+const uploadRoutes = require('./routes/uploadRoutes'); 
 const cors = require('cors');
 // Import the new Safety Net
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
@@ -26,6 +28,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Send Razorpay Key to Frontend
 app.get('/api/config/razorpay', (req, res) => {
@@ -35,6 +38,9 @@ app.get('/api/config/razorpay', (req, res) => {
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
+
+// Make the 'uploads' folder static (publicly accessible)
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // --- 🛑 ERROR HANDLERS (Must be at the bottom) ---
 app.use(notFound);      // 1. Catch 404s

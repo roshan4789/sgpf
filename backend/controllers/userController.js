@@ -6,22 +6,28 @@ const generateToken = require('../utils/generateToken');
 // @route   POST /api/users/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
+  // 'email' here actually holds whatever the user typed (Email, Phone, or Username)
   const { email, password } = req.body;
 
   if (!email || !password) {
     res.status(400);
-    throw new Error('Please provide both email and password');
+    throw new Error('Please provide login credentials');
   }
 
-  // Allow login with Phone OR Email
+  // Search by Email OR Phone OR Username
   const user = await User.findOne({ 
-    $or: [ { email: email }, { phone: email } ] 
+    $or: [ 
+        { email: email }, 
+        { phone: email },
+        { username: email } // 👈 ADDED THIS CHECK
+    ] 
   });
 
   if (user && (await user.matchPassword(password))) {
     res.json({
       _id: user._id,
       name: user.name,
+      username: user.username, // 👈 Send username back to frontend
       email: user.email,
       phone: user.phone,
       isAdmin: user.isAdmin,
@@ -30,7 +36,7 @@ const authUser = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(401);
-    throw new Error('Invalid email/phone or password');
+    throw new Error('Invalid username, email, phone or password');
   }
 });
 
