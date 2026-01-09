@@ -10,9 +10,29 @@ const AddProduct = () => {
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false); // Shows "Uploading..." spinner
 
-  // 2. Image Upload Handler (Crucial for Speed)
+  // 2. Image Upload Handler (Enhanced with validation and error handling)
   const uploadFileHandler = async (e) => {
     const file = e.target.files[0];
+    
+    if (!file) {
+      alert('Please select a file');
+      return;
+    }
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid file type. Please upload an image (JPEG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('File too large. Maximum size is 5MB');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('image', file);
     setUploading(true);
@@ -24,17 +44,21 @@ const AddProduct = () => {
         },
       };
 
-      // NOTE: You need a separate backend route '/api/upload' that handles 
-      // the actual Cloudinary upload and returns the URL. 
-      // Alternatively, you can upload directly to Cloudinary from here (Unsigned Upload).
-      const { data } = await axios.post('/api/upload', formData, config);
+      const API_URL = 'http://127.0.0.1:5000';
+      const { data } = await axios.post(`${API_URL}/api/upload`, formData, config);
 
-      setImage(data); // Set the returned Cloudinary URL
-      setUploading(false);
+      // Handle both old string format and new object format
+      const imagePath = typeof data === 'string' ? data : (data.path || data);
+      const fullImageUrl = imagePath.startsWith('http') ? imagePath : `${API_URL}${imagePath}`;
+      
+      setImage(fullImageUrl);
+      alert('Image uploaded successfully!');
     } catch (error) {
-      console.error(error);
+      console.error('Upload error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Image upload failed!';
+      alert(errorMessage);
+    } finally {
       setUploading(false);
-      alert('Image upload failed!');
     }
   };
 
