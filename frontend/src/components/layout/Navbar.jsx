@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import Badge from '../ui/Badge';
 import { CATEGORY_HIERARCHY } from '../../config/constants';
+import logo from '../../assets/logo.jpeg';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -41,9 +42,11 @@ const Navbar = () => {
                 {/* LEFT SECTION - LOGO */}
                 <div className="flex items-center gap-3 flex-shrink-0">
                     <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity duration-200">
-                        <div className="w-9 h-9 bg-gradient-to-br from-stone-800 to-stone-600 rounded-lg flex items-center justify-center shadow-sm">
-                            <span className="font-sans font-black text-xs text-white">SG</span>
-                        </div>
+                        <img 
+                            src={logo} 
+                            alt="Shri Ganpati" 
+                            className="w-12 h-12 object-contain rounded-lg"
+                        />
                         <span className="text-xl font-bold text-stone-900 tracking-tight">Shri Ganpati</span>
                     </Link>
                 </div>

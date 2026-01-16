@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
+import logo from '../assets/logo.jpeg';
 
 const RegisterPage = () => {
     const { register, user } = useAuth();
@@ -45,8 +46,13 @@ const RegisterPage = () => {
         <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4 py-12">
             <div className="bg-white w-full max-w-md p-8 rounded-3xl shadow-xl border border-stone-100">
                 <div className="text-center mb-8">
+                    <img 
+                        src={logo} 
+                        alt="Shri Ganpati" 
+                        className="w-20 h-20 object-contain mx-auto mb-4 rounded-lg"
+                    />
                     <h1 className="text-3xl font-serif font-bold text-stone-900 mb-2">Create Account</h1>
-                    <p className="text-stone-500">Join the SGPF family today</p>
+                    <p className="text-stone-500">Join to SGPF family today</p>
                 </div>
 
                 {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 text-center font-medium">{error}</div>}

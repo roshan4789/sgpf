@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Toast from '../components/ui/Toast';
+import logo from '../assets/logo.jpeg';
 
 const LoginPage = () => {
     const { login, user } = useAuth();
@@ -40,6 +41,11 @@ const LoginPage = () => {
         <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
             <div className="bg-white w-full max-w-md p-8 rounded-3xl shadow-xl border border-stone-100">
                 <div className="text-center mb-8">
+                    <img 
+                        src={logo} 
+                        alt="Shri Ganpati" 
+                        className="w-20 h-20 object-contain mx-auto mb-4 rounded-lg"
+                    />
                     <h1 className="text-3xl font-serif font-bold text-stone-900 mb-2">Welcome Back</h1>
                     <p className="text-stone-500">Sign in to continue to SGPF</p>
                 </div>

@@ -12,6 +12,9 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminDashboard from './pages/AdminDashboard';
 import WorkerDashboard from './pages/WorkerDashboard';
+import TrackOrderPage from './pages/TrackOrderPage';
+import ReturnsPage from './pages/ReturnsPage';
+import ContactPage from './pages/ContactPage';
 
 // ScrollToTop Helper
 const ScrollToTop = () => {
@@ -43,6 +46,11 @@ function App() {
                 <Route path="/login" element={<PublicLayout><LoginPage /></PublicLayout>} />
                 <Route path="/register" element={<PublicLayout><RegisterPage /></PublicLayout>} />
                 <Route path="/profile" element={<PublicLayout><ProfilePage /></PublicLayout>} />
+
+                {/* Customer Service Routes */}
+                <Route path="/track-order" element={<PublicLayout><TrackOrderPage /></PublicLayout>} />
+                <Route path="/returns" element={<PublicLayout><ReturnsPage /></PublicLayout>} />
+                <Route path="/contact" element={<PublicLayout><ContactPage /></PublicLayout>} />
 
                 {/* Admin Route (No Footer/Navbar override if desired, or keep it. Dashboard has its own sidebar) */}
                 <Route path="/admin" element={<AdminDashboard />} />

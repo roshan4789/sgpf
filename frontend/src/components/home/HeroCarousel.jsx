@@ -18,7 +18,7 @@ const HeroCarousel = ({ scrollToProducts }) => {
     if (banners.length === 0) return null;
 
     return (
-        <div className="relative bg-stone-900 text-white rounded-2xl overflow-hidden mb-12 h-[400px] md:h-[500px] flex items-center w-full shadow-lg group">
+        <div className="relative bg-stone-900 text-white rounded-2xl overflow-hidden mb-12 h-[300px] md:h-[400px] flex items-center w-full shadow-lg group">
             {banners.map((slide, index) => (
                 <div key={slide.id || index} className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
                     {/* Overlay */}
@@ -26,12 +26,12 @@ const HeroCarousel = ({ scrollToProducts }) => {
                     <img src={slide.image} alt="Hero" className="w-full h-full object-cover" />
 
                     {/* Content */}
-                    <div className="absolute z-20 inset-0 flex flex-col justify-center px-6 md:px-16 text-left">
+                    <div className="absolute z-20 inset-0 flex flex-col justify-center px-6 md:px-16 text-center">
                         <div className="max-w-2xl">
                             <span className="text-stone-300 font-medium tracking-wide uppercase mb-2 block text-sm">
                                 {slide.subtitle}
                             </span>
-                            <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
+                            <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
                                 {slide.title}
                             </h1>
                             <p className="text-stone-200 text-base md:text-lg mb-8 max-w-lg leading-relaxed">

@@ -11,14 +11,16 @@ import Toast from '../components/ui/Toast';
 const ProductDetailsPage = () => {
     const { id } = useParams();
     const { addToCart } = useCart();
-    const { user } = useAuth(); // for wishlist if implemented
-    const { fetchRelatedProducts, products } = useShop(); // try to get from cache first
+    const { user } = useAuth();
+    const { fetchRelatedProducts, products } = useShop();
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [related, setRelated] = useState([]);
     const [toast, setToast] = useState(null);
     const [mainImage, setMainImage] = useState('');
+    const [isWishlisted, setIsWishlisted] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
@@ -49,6 +51,12 @@ const ProductDetailsPage = () => {
         loadProduct();
     }, [id, products]); // Re-run if ID changes
 
+    useEffect(() => {
+        if (product && user && user.wishlist) {
+            setIsWishlisted(user.wishlist.some(item => item._id === product._id || item === product._id));
+        }
+    }, [product, user]);
+
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-amber-700" size={48} /></div>;
     if (!product) return <div className="text-center py-20">Product not found <Link to="/" className="text-amber-700 underline">Go Home</Link></div>;
 
@@ -57,6 +65,36 @@ const ProductDetailsPage = () => {
     const handleAddToCart = () => {
         addToCart(product);
         setToast({ message: "Added to Cart!", type: "success" });
+    };
+
+    const handleWishlist = async () => {
+        if (!user) {
+            setToast({ message: "Please login to add to wishlist", type: "info" });
+            return;
+        }
+
+        setWishlistLoading(true);
+        try {
+            const { data } = await axios.put(`${API_URL}/api/users/wishlist`, 
+                { productId: product._id || product.id }, 
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            
+            setIsWishlisted(!isWishlisted);
+            setToast({ 
+                message: isWishlisted ? "Removed from wishlist" : "Added to wishlist", 
+                type: "success" 
+            });
+            
+            // Update user in localStorage to reflect wishlist changes
+            const updatedUser = { ...user, wishlist: data };
+            localStorage.setItem('ganpatiUser', JSON.stringify(updatedUser));
+            
+        } catch (error) {
+            setToast({ message: "Failed to update wishlist", type: "error" });
+        } finally {
+            setWishlistLoading(false);
+        }
     };
 
     return (
@@ -134,8 +172,20 @@ const ProductDetailsPage = () => {
                             >
                                 <ShoppingCart className="mr-2" /> Add to Cart
                             </Button>
-                            <button className="p-4 border-2 border-stone-200 rounded-xl hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition-all">
-                                <Heart size={24} />
+                            <button 
+                                onClick={handleWishlist}
+                                disabled={wishlistLoading}
+                                className={`
+                                    p-4 border-2 rounded-xl transition-all
+                                    ${isWishlisted
+                                        ? 'border-red-200 text-red-500 bg-red-50 hover:bg-red-100'
+                                        : 'border-stone-200 hover:border-red-200 hover:text-red-500 hover:bg-red-50'
+                                    }
+                                    disabled:opacity-50
+                                `}
+                                title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                            >
+                                <Heart size={24} className={isWishlisted ? 'fill-current' : ''} />
                             </button>
                         </div>
                     </div>

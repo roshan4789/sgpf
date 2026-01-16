@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Eye, Bell, Star, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Eye, Bell, Star, CheckCircle, Heart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
@@ -11,9 +11,17 @@ const ProductCard = ({ product }) => {
     const { user } = useAuth();
     const [adding, setAdding] = useState(false);
     const [toast, setToast] = useState(null);
+    const [isWishlisted, setIsWishlisted] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
 
     const isSoldOut = product.countInStock === 0;
     const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
+    useEffect(() => {
+        if (user && user.wishlist) {
+            setIsWishlisted(user.wishlist.some(item => item._id === product._id || item === product._id));
+        }
+    }, [user, product._id]);
 
     const handleAddToCart = (e) => {
         e.preventDefault();
@@ -35,6 +43,42 @@ const ProductCard = ({ product }) => {
             setToast({ message: "We will notify you when back in stock!", type: "success" });
         } catch (error) {
             setToast({ message: "Notification request sent!", type: "success" });
+        }
+    };
+
+    const handleWishlist = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!user) {
+            setToast({ message: "Please login to add to wishlist", type: "info" });
+            return;
+        }
+
+        setWishlistLoading(true);
+        try {
+            const { data } = await axios.put(`${API_URL}/api/users/wishlist`, 
+                { productId: product._id || product.id }, 
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            
+            setIsWishlisted(!isWishlisted);
+            setToast({ 
+                message: isWishlisted ? "Removed from wishlist" : "Added to wishlist", 
+                type: "success" 
+            });
+            
+            // Update user in localStorage to reflect wishlist changes
+            const updatedUser = { ...user, wishlist: data };
+            localStorage.setItem('ganpatiUser', JSON.stringify(updatedUser));
+            
+            // Trigger a custom event to notify other components
+            window.dispatchEvent(new CustomEvent('wishlistUpdated', { detail: data }));
+            
+        } catch (error) {
+            setToast({ message: "Failed to update wishlist", type: "error" });
+        } finally {
+            setWishlistLoading(false);
         }
     };
 
@@ -135,6 +179,21 @@ const ProductCard = ({ product }) => {
                                         <span>Add</span>
                                     </>
                                 )}
+                            </button>
+                            <button
+                                onClick={handleWishlist}
+                                disabled={wishlistLoading}
+                                className={`
+                                    px-3 py-2.5 rounded-lg border font-medium transition-all duration-300 flex items-center justify-center text-sm
+                                    ${isWishlisted
+                                        ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                                        : 'border-stone-300 text-stone-700 hover:bg-stone-50'
+                                    }
+                                    disabled:opacity-50
+                                `}
+                                title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                            >
+                                <Heart size={16} className={isWishlisted ? 'fill-current' : ''} />
                             </button>
                             <Link
                                 to={`/product/${product._id || product.id}`}

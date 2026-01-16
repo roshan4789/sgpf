@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, MapPin, Package, Heart, LogOut, Plus, Trash2, Edit2, X, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -12,6 +13,8 @@ const ProfilePage = () => {
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
     const [orders, setOrders] = useState([]);
+    const [wishlist, setWishlist] = useState([]);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
     const [toast, setToast] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -30,16 +33,32 @@ const ProfilePage = () => {
         }
         setEditForm({ name: user.name || '', phone: user.phone || '' });
         fetchOrders();
-        setEditForm({ name: user.name || '', phone: user.phone || '' });
-        fetchOrders();
+        fetchWishlist();
     }, [user, navigate]);
 
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['profile', 'addresses', 'orders'].includes(tab)) {
+        if (tab && ['profile', 'addresses', 'orders', 'wishlist'].includes(tab)) {
             setActiveTab(tab);
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        if (activeTab === 'wishlist' && user) {
+            fetchWishlist();
+        }
+    }, [activeTab, user]);
+
+    useEffect(() => {
+        const handleWishlistUpdate = () => {
+            if (activeTab === 'wishlist') {
+                fetchWishlist();
+            }
+        };
+
+        window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+        return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+    }, [activeTab]);
 
     const fetchOrders = async () => {
         if (!user) return;
@@ -50,6 +69,24 @@ const ProfilePage = () => {
             setOrders(data);
         } catch (e) {
             console.error("Error fetching orders");
+        }
+    };
+
+    const fetchWishlist = async () => {
+        if (!user) {
+            return;
+        }
+        setWishlistLoading(true);
+        try {
+            const response = await axios.get(`${API_URL}/api/users/wishlist`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setWishlist(response.data || []);
+        } catch (e) {
+            console.error("Error fetching wishlist:", e);
+            setWishlist([]); // Set empty array on error
+        } finally {
+            setWishlistLoading(false);
         }
     };
 
@@ -144,21 +181,22 @@ const ProfilePage = () => {
 
                 {/* Main Content */}
                 <div className="lg:col-span-3">
-                    <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
+                    <div className="flex flex-wrap gap-2 mb-8">
                         {[
                             { id: 'profile', label: 'Profile', icon: User },
                             { id: 'addresses', label: 'Addresses', icon: MapPin },
                             { id: 'orders', label: 'Orders', icon: Package },
+                            { id: 'wishlist', label: 'Wishlist', icon: Heart },
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${activeTab === tab.id
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === tab.id
                                     ? 'bg-amber-700 text-white shadow-lg'
                                     : 'bg-white text-stone-600 border border-stone-200 hover:border-amber-300'
                                     }`}
                             >
-                                <tab.icon size={18} /> {tab.label}
+                                <tab.icon size={16} /> {tab.label}
                             </button>
                         ))}
                     </div>
@@ -305,6 +343,64 @@ const ProfilePage = () => {
                                     </div>
                                 ) : (
                                     <p className="text-stone-500 text-center py-12">No orders yet.</p>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'wishlist' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold text-stone-900">Your Wishlist</h3>
+                                    <button 
+                                        onClick={fetchWishlist}
+                                        className="px-4 py-2 bg-amber-700 text-white rounded-lg text-sm hover:bg-amber-800"
+                                    >
+                                        Refresh Wishlist
+                                    </button>
+                                </div>
+                                {wishlistLoading ? (
+                                    <div className="flex justify-center py-12">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700"></div>
+                                    </div>
+                                ) : wishlist.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {wishlist.map(item => (
+                                            <div key={item._id} className="bg-white rounded-xl border border-stone-200 overflow-hidden hover:shadow-lg transition-all duration-300">
+                                                <Link to={`/product/${item._id}`} className="block">
+                                                    <div className="aspect-square bg-stone-50 overflow-hidden">
+                                                        <img
+                                                            src={item.image}
+                                                            alt={item.name}
+                                                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=No+Image'; }}
+                                                        />
+                                                    </div>
+                                                    <div className="p-4">
+                                                        <h4 className="font-semibold text-stone-900 mb-2 line-clamp-2">{item.name}</h4>
+                                                        <div className="flex items-baseline gap-2">
+                                                            <span className="text-lg font-bold text-stone-900">₹{item.price.toLocaleString()}</span>
+                                                            {item.originalPrice && item.originalPrice > item.price && (
+                                                                <span className="text-sm text-stone-400 line-through">₹{item.originalPrice.toLocaleString()}</span>
+                                                            )}
+                                                        </div>
+                                                        {item.countInStock === 0 ? (
+                                                            <div className="mt-2 text-red-600 text-sm font-medium">Out of Stock</div>
+                                                        ) : item.countInStock < 5 ? (
+                                                            <div className="mt-2 text-orange-600 text-sm font-medium">Low Stock</div>
+                                                        ) : (
+                                                            <div className="mt-2 text-green-600 text-sm font-medium">In Stock</div>
+                                                        )}
+                                                    </div>
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <Heart size={48} className="mx-auto text-stone-300 mb-4" />
+                                        <p className="text-stone-500 mb-4">Your wishlist is empty</p>
+                                        <Button onClick={() => navigate('/')}>Start Shopping</Button>
+                                    </div>
                                 )}
                             </div>
                         )}
