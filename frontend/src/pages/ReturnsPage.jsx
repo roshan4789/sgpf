@@ -300,9 +300,9 @@ const ReturnsPage = () => {
                                         <Phone className="w-4 h-4" />
                                         +91 98765 43210
                                     </a>
-                                    <a href="mailto:returns@shriganpati.com" className="flex items-center gap-2 text-amber-700 hover:text-amber-800 text-sm font-medium">
+                                    <a href="mailto:returns@sgpf.com" className="flex items-center gap-2 text-amber-700 hover:text-amber-800 text-sm font-medium">
                                         <Mail className="w-4 h-4" />
-                                        returns@shriganpati.com
+                                        returns@sgpf.com
                                     </a>
                                 </div>
                             </div>

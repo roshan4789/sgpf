@@ -1,17 +1,21 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
-const logAudit = require('../utils/auditLogger'); // Import Logger
+const logAudit = require('../utils/auditLogger');
 
 // 🛡️ Protect: Verifies the user is logged in
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer  ')) {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select('-password');
+      if (!req.user) {
+        res.status(401);
+        throw new Error('User not found');
+      }
       next();
     } catch (error) {
       res.status(401);
@@ -27,15 +31,21 @@ const protect = asyncHandler(async (req, res, next) => {
 
 // 👑 Admin: Double-Protected & Audited
 const admin = (req, res, next) => {
-  if (req.user && req.user.isAdmin) {
-    next();
-  } else {
-    // 🚨 SECURITY AUDIT: Log unauthorized admin access attempts
+  if (req.user && (req.user.isAdmin || req.user.role === 'admin')) {
+    return next();
+  }
     logAudit(req, 'UNAUTHORIZED_ADMIN_ACCESS', 'N/A', 'User tried to access Admin Route', 'FAILURE');
-    
     res.status(401);
     throw new Error('Not authorized as an admin');
+};
+// 👷 Worker: Protected
+const worker = (req, res, next) => {
+  if (req.user && (req.user.isWorker || req.user.role === 'worker')) {
+    return next();
   }
+    logAudit(req, 'UNAUTHORIZED_WORKER_ACCESS', 'N/A', 'User tried to access Worker Route', 'FAILURE');
+    res.status(401);
+    throw new Error('Not authorized as a worker');
 };
 
-module.exports = { protect, admin };
+module.exports = { protect, admin, worker };

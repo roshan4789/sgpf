@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ShoppingCart, Star, Heart, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Star, Heart, ArrowLeft, CheckCircle } from 'lucide-react';
+import { PageLoader } from '../components/ui/Loader';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useShop } from '../context/ShopContext';
@@ -57,7 +58,7 @@ const ProductDetailsPage = () => {
         }
     }, [product, user]);
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-amber-700" size={48} /></div>;
+    if (loading) return <PageLoader message="Loading product details..." />;
     if (!product) return <div className="text-center py-20">Product not found <Link to="/" className="text-amber-700 underline">Go Home</Link></div>;
 
     const isSoldOut = product.countInStock === 0;
@@ -75,21 +76,21 @@ const ProductDetailsPage = () => {
 
         setWishlistLoading(true);
         try {
-            const { data } = await axios.put(`${API_URL}/api/users/wishlist`, 
-                { productId: product._id || product.id }, 
+            const { data } = await axios.put(`${API_URL}/api/users/wishlist`,
+                { productId: product._id || product.id },
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
-            
+
             setIsWishlisted(!isWishlisted);
-            setToast({ 
-                message: isWishlisted ? "Removed from wishlist" : "Added to wishlist", 
-                type: "success" 
+            setToast({
+                message: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
+                type: "success"
             });
-            
+
             // Update user in localStorage to reflect wishlist changes
             const updatedUser = { ...user, wishlist: data };
             localStorage.setItem('ganpatiUser', JSON.stringify(updatedUser));
-            
+
         } catch (error) {
             setToast({ message: "Failed to update wishlist", type: "error" });
         } finally {
@@ -172,7 +173,7 @@ const ProductDetailsPage = () => {
                             >
                                 <ShoppingCart className="mr-2" /> Add to Cart
                             </Button>
-                            <button 
+                            <button
                                 onClick={handleWishlist}
                                 disabled={wishlistLoading}
                                 className={`

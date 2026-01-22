@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package, Users, BarChart3, Settings, Plus, Edit, Trash2, Search, X, Image as ImageIcon, CheckCircle, Upload, LogOut } from 'lucide-react';
+import { Package, Users, BarChart3, Settings, Plus, Edit, Trash2, Search, X, Image as ImageIcon, CheckCircle, Upload, LogOut, Box, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -13,10 +13,35 @@ const AdminDashboard = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState(null);
 
+    // Category options for dropdowns
+    const MAIN_CATEGORIES = [
+        'Frames',
+        'Posters',
+        'Canvas',
+        'Wall Art',
+        'Accessories',
+        'General'
+    ];
+
+    const SUBCATEGORIES = {
+        'Frames': ['Photo Frames', 'Certificate Frames', 'Collage Frames', 'Custom Frames'],
+        'Posters': ['Movie Posters', 'Anime Posters', 'Music Posters', 'Sports Posters', 'Abstract Art'],
+        'Canvas': ['Canvas Prints', 'Canvas Paintings', 'Custom Canvas'],
+        'Wall Art': ['Metal Art', 'Wood Art', 'Vinyl Decals', 'Wall Stickers'],
+        'Accessories': ['Hanging Hardware', 'Mounts', 'Clips', 'Other'],
+        'General': ['Miscellaneous', 'Uncategorized']
+    };
+
+    // Get subcategories based on selected main category
+    const getSubcategories = (mainCat) => {
+        return SUBCATEGORIES[mainCat] || ['General'];
+    };
+
     // Data State
     const [products, setProducts] = useState([]);
     const [orders, setOrders] = useState([]);
     const [banners, setBanners] = useState([]);
+    const [stockUpdates, setStockUpdates] = useState({});
 
     // Banner Form
     const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
@@ -89,15 +114,61 @@ const AdminDashboard = () => {
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
+        if (!file) return;
+
+        console.log('📤 Starting image upload:', {
+            filename: file.name,
+            size: file.size,
+            type: file.type,
+            apiUrl: API_URL
+        });
+
         const formData = new FormData();
         formData.append('image', file);
         try {
+            console.log('📤 Sending upload request to:', `${API_URL}/api/upload`);
             const { data } = await axios.post(`${API_URL}/api/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${user.token}` }
             });
-            setProductForm({ ...productForm, image: data.path });
+
+            console.log('✅ Upload response received:', data);
+
+            // Handle different response formats
+            const imagePath = typeof data === 'string' ? data : (data.path || data.url || data);
+            let fullImageUrl;
+
+            if (imagePath.startsWith('http')) {
+                fullImageUrl = imagePath;
+            } else if (imagePath.startsWith('/uploads/')) {
+                // Backend returns /uploads/filename, construct full URL
+                fullImageUrl = `${API_URL}${imagePath}`;
+            } else if (imagePath.startsWith('uploads/')) {
+                // Backend returns uploads/filename, add leading slash
+                fullImageUrl = `${API_URL}/${imagePath}`;
+            } else {
+                // Fallback
+                fullImageUrl = `${API_URL}/${imagePath}`;
+            }
+
+            console.log('✅ Final image URL:', fullImageUrl);
+            setProductForm({ ...productForm, image: fullImageUrl });
+            setToast({ message: "Image uploaded successfully!", type: "success" });
         } catch (e) {
-            setToast({ message: "Image upload failed", type: "error" });
+            console.error('❌ Product image upload error:', e);
+            console.error('❌ Error details:', {
+                message: e.message,
+                response: e.response?.data,
+                status: e.response?.status,
+                statusText: e.response?.statusText
+            });
+
+            // Show specific error message from backend if available
+            const errorMessage = e.response?.data?.message ||
+                e.response?.data?.error ||
+                e.message ||
+                "Image upload failed";
+
+            setToast({ message: errorMessage, type: "error" });
         }
     };
 
@@ -106,6 +177,13 @@ const AdminDashboard = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const payload = { ...productForm, discount };
+
+            console.log('💾 Saving product:', {
+                isEditing: isEditingProduct,
+                payload: payload,
+                apiUrl: API_URL
+            });
+
             if (isEditingProduct) {
                 // FIXED: Use PUT for editing
                 await axios.put(`${API_URL}/api/products/${editingProductId}`, payload, config);
@@ -117,7 +195,21 @@ const AdminDashboard = () => {
             setIsProductModalOpen(false);
             fetchDashboardData(); // Refresh
         } catch (e) {
-            setToast({ message: "Operation failed", type: "error" });
+            console.error('❌ Product save error:', e);
+            console.error('❌ Error details:', {
+                message: e.message,
+                response: e.response?.data,
+                status: e.response?.status,
+                statusText: e.response?.statusText
+            });
+
+            // Show specific error message from backend
+            const errorMessage = e.response?.data?.message ||
+                e.response?.data?.error ||
+                e.message ||
+                "Operation failed";
+
+            setToast({ message: errorMessage, type: "error" });
         }
     };
 
@@ -209,17 +301,114 @@ const AdminDashboard = () => {
 
     const handleBannerImageUpload = async (e) => {
         const file = e.target.files[0];
+        if (!file) return;
+
+        console.log('📤 Starting banner image upload:', {
+            filename: file.name,
+            size: file.size,
+            type: file.type,
+            apiUrl: API_URL
+        });
+
         const formData = new FormData();
         formData.append('image', file);
         try {
+            console.log('📤 Sending upload request to:', `${API_URL}/api/upload`);
             const { data } = await axios.post(`${API_URL}/api/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${user.token}` }
             });
-            setBannerForm(prev => ({ ...prev, image: data.path }));
+
+            console.log('✅ Upload response received:', data);
+
+            // Handle different response formats
+            const imagePath = typeof data === 'string' ? data : (data.path || data.url || data);
+            let fullImageUrl;
+
+            if (imagePath.startsWith('http')) {
+                fullImageUrl = imagePath;
+            } else if (imagePath.startsWith('/uploads/')) {
+                // Backend returns /uploads/filename, construct full URL
+                fullImageUrl = `${API_URL}${imagePath}`;
+            } else if (imagePath.startsWith('uploads/')) {
+                // Backend returns uploads/filename, add leading slash
+                fullImageUrl = `${API_URL}/${imagePath}`;
+            } else {
+                // Fallback
+                fullImageUrl = `${API_URL}/${imagePath}`;
+            }
+
+            console.log('✅ Final image URL:', fullImageUrl);
+            setBannerForm(prev => ({ ...prev, image: fullImageUrl }));
+            setToast({ message: "Banner image uploaded successfully!", type: "success" });
         } catch (e) {
-            setToast({ message: "Image upload failed", type: "error" });
+            console.error('❌ Banner image upload error:', e);
+            console.error('❌ Error details:', {
+                message: e.message,
+                response: e.response?.data,
+                status: e.response?.status,
+                statusText: e.response?.statusText
+            });
+
+            // Show specific error message from backend if available
+            const errorMessage = e.response?.data?.message ||
+                e.response?.data?.error ||
+                e.message ||
+                "Image upload failed";
+
+            setToast({ message: errorMessage, type: "error" });
         }
     };
+
+    const handleUpdateStock = async (productId) => {
+        const newStock = stockUpdates[productId];
+        if (newStock === undefined || newStock === '') return;
+
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+
+            // Try different endpoint formats
+            let response;
+            try {
+                response = await axios.put(`${API_URL}/api/products/${productId}/stock`, { countInStock: Number(newStock) }, config);
+            } catch (endpointError) {
+                console.log('First endpoint failed, trying alternative...');
+                // Try alternative endpoint
+                response = await axios.put(`${API_URL}/api/products/stock/${productId}`, { countInStock: Number(newStock) }, config);
+            }
+
+            setToast({ message: "Stock Updated Successfully", type: "success" });
+            setStockUpdates({ ...stockUpdates, [productId]: '' });
+            fetchDashboardData(); // Refresh data to show updated stock
+            console.log('Stock update successful:', response.data);
+        } catch (e) {
+            console.error('Stock update failed:', e);
+            console.error('Error details:', {
+                message: e.message,
+                response: e.response?.data,
+                status: e.response?.status
+            });
+
+            // More specific error messages
+            const errorMessage = e.response?.data?.message ||
+                e.response?.data?.error ||
+                e.message ||
+                "Stock update failed. Please try again.";
+
+            setToast({
+                message: errorMessage,
+                type: "error"
+            });
+        }
+    };
+
+    const getStockColor = (stock) => {
+        if (stock === 0) return 'text-red-600 bg-red-50';
+        if (stock < 5) return 'text-red-600 bg-red-50';
+        if (stock < 20) return 'text-amber-600 bg-amber-50';
+        return 'text-green-600 bg-green-50';
+    };
+
+    const lowStockCount = products.filter(p => p.countInStock < 5).length;
 
 
     return (
@@ -234,6 +423,7 @@ const AdminDashboard = () => {
                 <nav className="flex-1 px-4 space-y-2">
                     {[
                         { id: 'products', label: 'Products', icon: Package },
+                        { id: 'stock', label: 'Stock Management', icon: Box },
                         { id: 'banners', label: 'Banners', icon: ImageIcon },
                     ].map(tab => (
                         <button
@@ -288,6 +478,85 @@ const AdminDashboard = () => {
                                                 <td className="px-6 py-4 text-right">
                                                     <button onClick={() => openEditModal(p)} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg mr-2"><Edit size={16} /></button>
                                                     <button onClick={() => handleDeleteProduct(p._id || p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'stock' && (
+                    <div>
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h1 className="text-3xl font-bold text-stone-900">Stock Management</h1>
+                                <p className="text-stone-500 mt-1">Monitor and update product inventory levels</p>
+                            </div>
+                            <div className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg">
+                                <AlertTriangle size={20} className="text-red-600" />
+                                <span className="text-red-700 font-bold">{lowStockCount} Low Stock Items</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-stone-50 text-stone-500 text-sm uppercase">
+                                        <tr>
+                                            <th className="px-6 py-4">Product</th>
+                                            <th className="px-6 py-4">Category</th>
+                                            <th className="px-6 py-4">Price</th>
+                                            <th className="px-6 py-4">Current Stock</th>
+                                            <th className="px-6 py-4">Update Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-stone-100">
+                                        {products.map(product => (
+                                            <tr key={product._id} className="hover:bg-stone-50">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded-lg" />
+                                                        <div>
+                                                            <p className="font-bold text-stone-900">{product.name}</p>
+                                                            <p className="text-xs text-stone-500">{product.mainCategory}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm">{product.category}</td>
+                                                <td className="px-6 py-4 font-bold">₹{product.price}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${getStockColor(product.countInStock)}`}>
+                                                        {product.countInStock} units
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="9999"
+                                                            placeholder={product.countInStock}
+                                                            value={stockUpdates[product._id] || ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                // Only allow positive numbers
+                                                                if (value === '' || (Number(value) >= 0 && Number(value) <= 9999)) {
+                                                                    setStockUpdates({ ...stockUpdates, [product._id]: value });
+                                                                }
+                                                            }}
+                                                            className="w-24 px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                                        />
+                                                        <Button
+                                                            onClick={() => handleUpdateStock(product._id)}
+                                                            className="text-xs py-2 px-3"
+                                                            disabled={!stockUpdates[product._id] || stockUpdates[product._id] === product.countInStock}
+                                                        >
+                                                            Update
+                                                        </Button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -355,17 +624,71 @@ const AdminDashboard = () => {
                                     <input placeholder="Sale Price (Final)" type="number" className="w-full px-4 py-3 border rounded-lg font-bold text-amber-700" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} required />
                                 </div>
 
-                                <input placeholder="Category" className="px-4 py-3 border rounded-lg" value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} required />
-                                <input placeholder="Main Category (e.g., Frames)" className="px-4 py-3 border rounded-lg" value={productForm.mainCategory} onChange={e => setProductForm({ ...productForm, mainCategory: e.target.value })} />
+                                <div className="space-y-1">
+                                    <label className="text-xs text-stone-500 font-bold ml-1">Main Category</label>
+                                    <select
+                                        className="w-full px-4 py-3 border rounded-lg bg-white"
+                                        value={productForm.mainCategory}
+                                        onChange={e => {
+                                            const newMainCat = e.target.value;
+                                            setProductForm({
+                                                ...productForm,
+                                                mainCategory: newMainCat,
+                                                category: getSubcategories(newMainCat)[0] // Auto-select first subcategory
+                                            });
+                                        }}
+                                        required
+                                    >
+                                        <option value="">Select Main Category</option>
+                                        {MAIN_CATEGORIES.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-xs text-stone-500 font-bold ml-1">Sub Category</label>
+                                    <select
+                                        className="w-full px-4 py-3 border rounded-lg bg-white"
+                                        value={productForm.category}
+                                        onChange={e => setProductForm({ ...productForm, category: e.target.value })}
+                                        required
+                                        disabled={!productForm.mainCategory}
+                                    >
+                                        <option value="">Select Sub Category</option>
+                                        {productForm.mainCategory && getSubcategories(productForm.mainCategory).map(subcat => (
+                                            <option key={subcat} value={subcat}>{subcat}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 <input placeholder="Stock Count" type="number" className="px-4 py-3 border rounded-lg" value={productForm.countInStock} onChange={e => setProductForm({ ...productForm, countInStock: e.target.value })} required />
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-medium mb-1">Image</label>
-                                    <div className="flex gap-4 items-center">
-                                        <input type="text" placeholder="Image URL" className="flex-1 px-4 py-3 border rounded-lg" value={productForm.image} onChange={e => setProductForm({ ...productForm, image: e.target.value })} />
-                                        <span>OR</span>
-                                        <label className="cursor-pointer bg-stone-100 px-4 py-3 rounded-lg hover:bg-stone-200">
-                                            <Upload size={16} /> <input type="file" className="hidden" onChange={handleImageUpload} />
-                                        </label>
+                                    <div className="space-y-3">
+                                        {/* Image Preview */}
+                                        {productForm.image && (
+                                            <div className="flex items-center gap-4 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                                                <img
+                                                    src={productForm.image}
+                                                    alt="Product preview"
+                                                    className="w-20 h-20 object-cover rounded-lg border border-stone-300"
+                                                    onError={(e) => {
+                                                        console.error('Product image failed to load:', productForm.image);
+                                                        e.target.src = 'https://via.placeholder.com/80x80?text=Error';
+                                                    }}
+                                                />
+                                                <span className="text-sm text-green-600 font-medium">✓ Image uploaded</span>
+                                            </div>
+                                        )}
+
+                                        {/* Upload Controls */}
+                                        <div className="flex gap-4 items-center">
+                                            <input type="text" placeholder="Image URL" className="flex-1 px-4 py-3 border rounded-lg" value={productForm.image} onChange={e => setProductForm({ ...productForm, image: e.target.value })} />
+                                            <span>OR</span>
+                                            <label className="cursor-pointer bg-stone-100 px-4 py-3 rounded-lg hover:bg-stone-200">
+                                                <Upload size={16} /> <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 <textarea placeholder="Description" className="md:col-span-2 px-4 py-3 border rounded-lg h-32" value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })}></textarea>
@@ -399,12 +722,31 @@ const AdminDashboard = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Image</label>
-                                    <div className="flex gap-4 items-center">
-                                        <input type="text" placeholder="Image URL" className="flex-1 px-4 py-3 border rounded-lg" value={bannerForm.image} onChange={e => setBannerForm({ ...bannerForm, image: e.target.value })} />
-                                        <span>OR</span>
-                                        <label className="cursor-pointer bg-stone-100 px-4 py-3 rounded-lg hover:bg-stone-200">
-                                            <Upload size={16} /> <input type="file" className="hidden" onChange={handleBannerImageUpload} />
-                                        </label>
+                                    <div className="space-y-3">
+                                        {/* Banner Image Preview */}
+                                        {bannerForm.image && (
+                                            <div className="flex items-center gap-4 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                                                <img
+                                                    src={bannerForm.image}
+                                                    alt="Banner preview"
+                                                    className="w-24 h-16 object-cover rounded-lg border border-stone-300"
+                                                    onError={(e) => {
+                                                        console.error('Banner image failed to load:', bannerForm.image);
+                                                        e.target.src = 'https://via.placeholder.com/96x64?text=Error';
+                                                    }}
+                                                />
+                                                <span className="text-sm text-green-600 font-medium">✓ Banner uploaded</span>
+                                            </div>
+                                        )}
+
+                                        {/* Upload Controls */}
+                                        <div className="flex gap-4 items-center">
+                                            <input type="text" placeholder="Image URL" className="flex-1 px-4 py-3 border rounded-lg" value={bannerForm.image} onChange={e => setBannerForm({ ...bannerForm, image: e.target.value })} />
+                                            <span>OR</span>
+                                            <label className="cursor-pointer bg-stone-100 px-4 py-3 rounded-lg hover:bg-stone-200">
+                                                <Upload size={16} /> <input type="file" className="hidden" onChange={handleBannerImageUpload} accept="image/*" />
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex justify-end gap-3 mt-6">

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../services/api';
 import FullPageLoader from '../components/ui/FullPageLoader';
 
 const AuthContext = createContext();
@@ -11,8 +12,6 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [token, setToken] = useState(localStorage.getItem('ganpatiToken'));
     const [activeAuthAction, setActiveAuthAction] = useState(null);
-
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
     useEffect(() => {
         const loadUser = () => {
@@ -52,7 +51,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const { data } = await axios.post(`${API_URL}/api/users/login`, { email, password });
+            const { data } = await api.post(`/api/users/login`, { email, password });
 
             // Start Loader
             setActiveAuthAction({ type: 'LOGIN', text: 'Logging in...' });
@@ -67,13 +66,13 @@ export const AuthProvider = ({ children }) => {
 
             return data;
         } catch (error) {
-            throw error;
+            throw new Error(error?.response?.data?.message || 'Invalid email or password');
         }
     };
 
     const register = async (userData) => {
         try {
-            const { data } = await axios.post(`${API_URL}/api/users`, { ...userData, isAdmin: false });
+            const { data } = await api.post(`/api/users`, { ...userData, isAdmin: false });
 
             // Start Loader
             setActiveAuthAction({ type: 'REGISTER', text: 'Creating Account...' });
@@ -87,7 +86,7 @@ export const AuthProvider = ({ children }) => {
 
             return data;
         } catch (error) {
-            throw error;
+            throw new Error(error?.response?.data?.message || 'Registration failed');
         }
     };
 
@@ -104,7 +103,7 @@ export const AuthProvider = ({ children }) => {
 
     const updateProfile = async (updates) => {
         if (!user || !user.token) return;
-        const { data } = await axios.put(`${API_URL}/api/users/profile`, updates, {
+        const { data } = await api.put(`/api/users/profile`, updates, {
             headers: { Authorization: `Bearer ${user.token}` }
         });
         setUser(data);

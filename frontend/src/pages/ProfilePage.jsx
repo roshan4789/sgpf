@@ -20,9 +20,13 @@ const ProfilePage = () => {
 
     // Forms
     const [editForm, setEditForm] = useState({ name: '', phone: '' });
-    const [newAddress, setNewAddress] = useState({ street: '', city: '', state: '', zip: '' });
+    const [newAddress, setNewAddress] = useState({ street: '', city: '', state: '', zip: '', phone: '' });
     const [editingAddressIndex, setEditingAddressIndex] = useState(null);
-    const [editAddressForm, setEditAddressForm] = useState({ street: '', city: '', state: '', zip: '' });
+    const [editAddressForm, setEditAddressForm] = useState({ street: '', city: '', state: '', zip: '', phone: '' });
+
+    // City/State data
+    const [states, setStates] = useState([]);
+    const [loadingStates, setLoadingStates] = useState(false);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
@@ -34,6 +38,7 @@ const ProfilePage = () => {
         setEditForm({ name: user.name || '', phone: user.phone || '' });
         fetchOrders();
         fetchWishlist();
+        fetchStates();
     }, [user, navigate]);
 
     useEffect(() => {
@@ -90,6 +95,30 @@ const ProfilePage = () => {
         }
     };
 
+    const fetchStates = async () => {
+        console.log("Fetching states...");
+        setLoadingStates(true);
+        try {
+            // Using a mock Indian states API or you can create your own
+            const indianStates = [
+                "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa",
+                "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
+                "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland",
+                "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
+                "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+                "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+                "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+            ];
+            console.log("States loaded:", indianStates.length);
+            setStates(indianStates);
+        } catch (e) {
+            console.error("Error fetching states:", e);
+            setToast({ message: "Failed to load states", type: "error" });
+        } finally {
+            setLoadingStates(false);
+        }
+    };
+
     const handleUpdateProfile = async () => {
         setLoading(true);
         try {
@@ -108,7 +137,7 @@ const ProfilePage = () => {
         try {
             await updateProfile({ address: newAddress });
             setToast({ message: "Address added!", type: "success" });
-            setNewAddress({ street: '', city: '', state: '', zip: '' });
+            setNewAddress({ street: '', city: '', state: '', zip: '', phone: '' });
         } catch (e) {
             setToast({ message: "Failed to add address", type: "error" });
         } finally {
@@ -120,6 +149,7 @@ const ProfilePage = () => {
         const address = user.addresses[index];
         setEditAddressForm(address);
         setEditingAddressIndex(index);
+        // No need to fetch cities anymore - manual input
     };
 
     const handleUpdateAddress = async (index) => {
@@ -212,7 +242,10 @@ const ProfilePage = () => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-stone-700 mb-2">Phone Number</label>
-                                        <input className="w-full px-4 py-3 border border-stone-200 rounded-lg" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} placeholder="Enter phone number" />
+                                        <div className="flex">
+                                            <span className="inline-flex items-center px-3 border border-r-0 border-stone-200 bg-stone-50 text-stone-600 rounded-l-lg font-medium">+91</span>
+                                            <input className="flex-1 px-4 py-3 border border-stone-200 rounded-r-lg" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} placeholder="1234567890" />
+                                        </div>
                                     </div>
                                 </div>
                                 <Button onClick={handleUpdateProfile} disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</Button>
@@ -236,17 +269,35 @@ const ProfilePage = () => {
                                                                     value={editAddressForm.street}
                                                                     onChange={e => setEditAddressForm({ ...editAddressForm, street: e.target.value })}
                                                                 />
+                                                                <div className="flex">
+                                                                    <span className="inline-flex items-center px-2 border border-r-0 border-stone-300 bg-stone-50 text-stone-600 rounded-l-lg text-xs font-medium">+91</span>
+                                                                    <input
+                                                                        placeholder="1234567890"
+                                                                        className="flex-1 px-3 py-2 border border-stone-300 rounded-r-lg text-sm"
+                                                                        value={editAddressForm.phone || ''}
+                                                                        onChange={e => setEditAddressForm({ ...editAddressForm, phone: e.target.value })}
+                                                                    />
+                                                                </div>
+                                                                <select
+                                                                    className="px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                                                                    value={editAddressForm.state}
+                                                                    onChange={e => {
+                                                                        console.log("Edit form state changed to:", e.target.value);
+                                                                        const selectedState = e.target.value;
+                                                                        setEditAddressForm({ ...editAddressForm, state: selectedState });
+                                                                        // Cities are now manual input, no need to fetch
+                                                                    }}
+                                                                >
+                                                                    <option value="">Select State</option>
+                                                                    {states.map(state => (
+                                                                        <option key={state} value={state}>{state}</option>
+                                                                    ))}
+                                                                </select>
                                                                 <input
                                                                     placeholder="City"
                                                                     className="px-3 py-2 border border-stone-300 rounded-lg text-sm"
                                                                     value={editAddressForm.city}
                                                                     onChange={e => setEditAddressForm({ ...editAddressForm, city: e.target.value })}
-                                                                />
-                                                                <input
-                                                                    placeholder="State"
-                                                                    className="px-3 py-2 border border-stone-300 rounded-lg text-sm"
-                                                                    value={editAddressForm.state}
-                                                                    onChange={e => setEditAddressForm({ ...editAddressForm, state: e.target.value })}
                                                                 />
                                                                 <input
                                                                     placeholder="ZIP Code"
@@ -273,11 +324,36 @@ const ProfilePage = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="flex justify-between items-start">
-                                                            <div>
+                                                            <div className="flex-1">
+                                                                {user.primaryAddressIndex === i && (
+                                                                    <span className="inline-block px-2 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded mb-2">
+                                                                        PRIMARY ADDRESS
+                                                                    </span>
+                                                                )}
                                                                 <p className="font-semibold text-stone-900">{addr.street}</p>
                                                                 <p className="text-sm text-stone-600">{addr.city}, {addr.state} {addr.zip}</p>
+                                                                {addr.phone && <p className="text-sm text-stone-600">📞 {addr.phone}</p>}
                                                             </div>
                                                             <div className="flex gap-2">
+                                                                {user.primaryAddressIndex !== i && (
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            setLoading(true);
+                                                                            try {
+                                                                                await updateProfile({ primaryAddressIndex: i });
+                                                                                setToast({ message: "Primary address updated!", type: "success" });
+                                                                            } catch (e) {
+                                                                                setToast({ message: "Failed to set primary address", type: "error" });
+                                                                            } finally {
+                                                                                setLoading(false);
+                                                                            }
+                                                                        }}
+                                                                        className="p-2 hover:bg-amber-100 rounded-lg transition-colors"
+                                                                        title="Set as primary"
+                                                                    >
+                                                                        <Check size={16} className="text-amber-600" />
+                                                                    </button>
+                                                                )}
                                                                 <button
                                                                     onClick={() => handleEditAddress(i)}
                                                                     className="p-2 hover:bg-stone-200 rounded-lg transition-colors"
@@ -306,10 +382,52 @@ const ProfilePage = () => {
                                 <div className="border-t pt-6">
                                     <h4 className="font-bold text-stone-900 mb-4">Add New Address</h4>
                                     <form onSubmit={handleAddAddress} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input placeholder="Street Address" className="px-4 py-3 border border-stone-200 rounded-lg" value={newAddress.street} onChange={e => setNewAddress({ ...newAddress, street: e.target.value })} required />
-                                        <input placeholder="City" className="px-4 py-3 border border-stone-200 rounded-lg" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} required />
-                                        <input placeholder="State" className="px-4 py-3 border border-stone-200 rounded-lg" value={newAddress.state} onChange={e => setNewAddress({ ...newAddress, state: e.target.value })} required />
-                                        <input placeholder="ZIP Code" className="px-4 py-3 border border-stone-200 rounded-lg" value={newAddress.zip} onChange={e => setNewAddress({ ...newAddress, zip: e.target.value })} required />
+                                        <input
+                                            placeholder="Street Address"
+                                            className="px-4 py-3 border border-stone-200 rounded-lg"
+                                            value={newAddress.street}
+                                            onChange={e => setNewAddress({ ...newAddress, street: e.target.value })}
+                                            required
+                                        />
+                                        <div className="flex">
+                                            <span className="inline-flex items-center px-3 border border-r-0 border-stone-200 bg-stone-50 text-stone-600 rounded-l-lg font-medium">+91</span>
+                                            <input 
+                                                placeholder="1234567890" 
+                                                className="flex-1 px-4 py-3 border border-stone-200 rounded-r-lg" 
+                                                value={newAddress.phone} 
+                                                onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })} 
+                                            />
+                                        </div>
+                                        <select
+                                            className="px-4 py-3 border border-stone-200 rounded-lg"
+                                            value={newAddress.state}
+                                            onChange={e => {
+                                                console.log("Add form state changed to:", e.target.value);
+                                                const selectedState = e.target.value;
+                                                setNewAddress({ ...newAddress, state: selectedState });
+                                                // Cities are now manual input, no need to fetch
+                                            }}
+                                            required
+                                        >
+                                            <option value="">Select State</option>
+                                            {states.map(state => (
+                                                <option key={state} value={state}>{state}</option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            placeholder="City"
+                                            className="px-4 py-3 border border-stone-200 rounded-lg"
+                                            value={newAddress.city}
+                                            onChange={e => setNewAddress({ ...newAddress, city: e.target.value })}
+                                            required
+                                        />
+                                        <input
+                                            placeholder="ZIP Code"
+                                            className="px-4 py-3 border border-stone-200 rounded-lg"
+                                            value={newAddress.zip}
+                                            onChange={e => setNewAddress({ ...newAddress, zip: e.target.value })}
+                                            required
+                                        />
                                         <div className="md:col-span-2">
                                             <Button disabled={loading}><Plus size={16} /> Save Address</Button>
                                         </div>
@@ -351,7 +469,7 @@ const ProfilePage = () => {
                             <div>
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="text-xl font-bold text-stone-900">Your Wishlist</h3>
-                                    <button 
+                                    <button
                                         onClick={fetchWishlist}
                                         className="px-4 py-2 bg-amber-700 text-white rounded-lg text-sm hover:bg-amber-800"
                                     >

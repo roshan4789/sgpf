@@ -1,20 +1,21 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import PrivacyPolicy from './pages/privacyPolicy';
 
-// Pages
-import HomePage from './pages/HomePage';
-import ProductDetailsPage from './pages/ProductDetailsPage';
-import CartPage from './pages/CartPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ProfilePage from './pages/ProfilePage';
-import AdminDashboard from './pages/AdminDashboard';
-import WorkerDashboard from './pages/WorkerDashboard';
-import TrackOrderPage from './pages/TrackOrderPage';
-import ReturnsPage from './pages/ReturnsPage';
-import ContactPage from './pages/ContactPage';
+// Lazy load pages for better performance
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ProductDetailsPage = lazy(() => import('./pages/ProductDetailsPage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const WorkerDashboard = lazy(() => import('./pages/WorkerDashboard'));
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
+const ReturnsPage = lazy(() => import('./pages/ReturnsPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 
 // ScrollToTop Helper
 const ScrollToTop = () => {
@@ -25,13 +26,25 @@ const ScrollToTop = () => {
     return null;
 };
 
+// Loading fallback
+const LoadingFallback = () => (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100">
+        <div className="text-center">
+            <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-stone-600 font-medium">Loading...</p>
+        </div>
+    </div>
+);
+
 // Layout for Public Pages
 const PublicLayout = ({ children }) => (
-    <>
-        <Navbar />
-        {children}
-        <Footer />
-    </>
+    <Suspense fallback={<LoadingFallback />}>
+        <>
+            <Navbar />
+            {children}
+            <Footer />
+        </>
+    </Suspense>
 );
 
 function App() {
@@ -43,8 +56,8 @@ function App() {
                 <Route path="/" element={<PublicLayout><HomePage /></PublicLayout>} />
                 <Route path="/product/:id" element={<PublicLayout><ProductDetailsPage /></PublicLayout>} />
                 <Route path="/cart" element={<PublicLayout><CartPage /></PublicLayout>} />
-                <Route path="/login" element={<PublicLayout><LoginPage /></PublicLayout>} />
-                <Route path="/register" element={<PublicLayout><RegisterPage /></PublicLayout>} />
+                <Route path="/login" element={<Suspense fallback={<LoadingFallback />}><LoginPage /></Suspense>} />
+                <Route path="/register" element={<Suspense fallback={<LoadingFallback />}><RegisterPage /></Suspense>} />
                 <Route path="/profile" element={<PublicLayout><ProfilePage /></PublicLayout>} />
 
                 {/* Customer Service Routes */}
@@ -53,13 +66,15 @@ function App() {
                 <Route path="/contact" element={<PublicLayout><ContactPage /></PublicLayout>} />
 
                 {/* Admin Route (No Footer/Navbar override if desired, or keep it. Dashboard has its own sidebar) */}
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin" element={<Suspense fallback={<LoadingFallback />}><AdminDashboard /></Suspense>} />
 
                 {/* Worker Route */}
-                <Route path="/worker" element={<WorkerDashboard />} />
+                <Route path="/worker" element={<Suspense fallback={<LoadingFallback />}><WorkerDashboard /></Suspense>} />
 
                 {/* Staff Login - could be same as Login but with redirect */}
                 <Route path="/staff-login" element={<PublicLayout><LoginPage /></PublicLayout>} />
+
+                <Route path="/privacy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
 
                 {/* 404 */}
                 <Route path="*" element={<PublicLayout><div className="text-center py-40 font-bold text-2xl text-stone-400">Page Not Found</div></PublicLayout>} />

@@ -17,12 +17,12 @@ const Footer = () => {
                         {/* Brand */}
                         <div>
                             <div className="text-2xl font-serif font-bold text-white tracking-tight flex items-center gap-2 mb-4">
-                                <img 
-                                    src={logo} 
-                                    alt="Shri Ganpati" 
+                                <img
+                                    src={logo}
+                                    alt="SGPF"
                                     className="w-12 h-12 object-contain rounded-lg"
                                 />
-                                <span>Shri Ganpati</span>
+                                <span>SGPF</span>
                             </div>
                             <p className="text-stone-400 leading-relaxed text-sm">Premium photo frames, religious wall art, and custom framing solutions.</p>
                         </div>
@@ -40,13 +40,53 @@ const Footer = () => {
 
                         {/* Support */}
                         <div>
-                            <h4 className="font-bold text-white mb-6">Support</h4>
-                            <ul className="space-y-3 text-stone-400 text-sm">
-                                <li><Link to="/track-order" className="hover:text-amber-500 transition-colors font-medium">Track Order</Link></li>
-                                <li><Link to="/returns" className="hover:text-amber-500 transition-colors font-medium">Returns & Exchange</Link></li>
-                                <li><Link to="/contact" className="hover:text-amber-500 transition-colors font-medium">Contact Us</Link></li>
-                            </ul>
-                        </div>
+    <h4 className="font-bold text-white mb-6">Support</h4>
+
+    <ul className="space-y-3 text-stone-400 text-sm mb-6">
+        <li>
+            <Link
+                to="/track-order"
+                className="hover:text-amber-500 transition-colors font-medium"
+            >
+                Track Order
+            </Link>
+        </li>
+
+        <li>
+            <Link
+                to="/contact"
+                className="hover:text-amber-500 transition-colors font-medium"
+            >
+                Contact Us
+            </Link>
+        </li>
+    </ul>
+
+    {/* Customer Care */}
+    <div className="text-sm text-stone-400 space-y-2">
+        <p className="font-semibold text-white">Customer Care</p>
+
+        <p>
+            Email:
+            <a
+                href="mailto:support@sgpf.in"
+                className="ml-1 text-amber-500 hover:underline"
+            >
+                support@sgpf.in
+            </a>
+        </p>
+
+        <p>
+            Phone:
+            <a
+                href="tel:+919829269866"
+                className="ml-1 text-amber-500 hover:underline"
+            >
+                +91 9829269866
+            </a>
+        </p>
+    </div>
+</div>
 
                         {/* Newsletter */}
                         <div>
@@ -68,7 +108,7 @@ const Footer = () => {
                     {/* Divider */}
                     <div className="border-t border-stone-800 py-8">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <p className="text-sm text-stone-500">© 2026 Shri Ganpati. All rights reserved.</p>
+                            <p className="text-sm text-stone-500">© 2026 SGPF. All rights reserved.</p>
                             <div className="flex items-center gap-6 text-sm">
                                 <Link to="/privacy" className="text-stone-400 hover:text-amber-500 transition-colors">Privacy Policy</Link>
                                 <Link to="/terms" className="text-stone-400 hover:text-amber-500 transition-colors">Terms of Service</Link>

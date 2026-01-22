@@ -48,11 +48,25 @@ const AddProduct = () => {
       const { data } = await axios.post(`${API_URL}/api/upload`, formData, config);
 
       // Handle both old string format and new object format
-      const imagePath = typeof data === 'string' ? data : (data.path || data);
-      const fullImageUrl = imagePath.startsWith('http') ? imagePath : `${API_URL}${imagePath}`;
+      const imagePath = typeof data === 'string' ? data : (data.path || data.url || data);
+      let fullImageUrl;
+      
+      if (imagePath.startsWith('http')) {
+        fullImageUrl = imagePath;
+      } else if (imagePath.startsWith('/uploads/')) {
+        // Backend returns /uploads/filename, construct full URL
+        fullImageUrl = `${API_URL}${imagePath}`;
+      } else if (imagePath.startsWith('uploads/')) {
+        // Backend returns uploads/filename, add leading slash
+        fullImageUrl = `${API_URL}/${imagePath}`;
+      } else {
+        // Fallback
+        fullImageUrl = `${API_URL}/${imagePath}`;
+      }
       
       setImage(fullImageUrl);
       alert('Image uploaded successfully!');
+      console.log('Upload successful:', fullImageUrl);
     } catch (error) {
       console.error('Upload error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Image upload failed!';
@@ -123,24 +137,49 @@ const AddProduct = () => {
         {/* Image Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Image</label>
-          <div className="flex items-center gap-4 mt-1">
-            <input
-              type="text"
-              placeholder="Image URL"
-              className="flex-1 p-2 border border-gray-300 rounded-md bg-gray-100"
-              value={image}
-              readOnly
-            />
-            <label className="cursor-pointer bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300 transition">
-              <span>Choose File</span>
-              <input 
-                type="file" 
-                className="hidden" 
-                onChange={uploadFileHandler} 
+          <div className="space-y-3 mt-1">
+            {/* Image Preview */}
+            {image && (
+              <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <img 
+                  src={image} 
+                  alt="Product preview" 
+                  className="w-20 h-20 object-cover rounded-lg border border-gray-300"
+                  onError={(e) => {
+                    console.error('Image failed to load:', image);
+                    e.target.src = 'https://via.placeholder.com/80x80?text=Error';
+                  }}
+                />
+                <span className="text-sm text-green-600 font-medium">✓ Image uploaded</span>
+              </div>
+            )}
+            
+            {/* Upload Controls */}
+            <div className="flex items-center gap-4">
+              <input
+                type="text"
+                placeholder="Image URL"
+                className="flex-1 p-2 border border-gray-300 rounded-md bg-gray-100"
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
               />
-            </label>
+              <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                <span>Choose File</span>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  onChange={uploadFileHandler} 
+                  accept="image/*"
+                />
+              </label>
+            </div>
+            {uploading && (
+              <div className="flex items-center gap-2 text-sm text-blue-500 mt-1">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                Uploading image...
+              </div>
+            )}
           </div>
-          {uploading && <p className="text-sm text-blue-500 mt-1">Uploading image...</p>}
         </div>
 
         {/* Category */}

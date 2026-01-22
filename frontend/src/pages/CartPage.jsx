@@ -4,7 +4,7 @@ import { ShoppingCart, ArrowRight, Trash2, Plus, Minus, ChevronLeft, Lock } from
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
-import axios from 'axios';
+import api from '../services/api';
 import Toast from '../components/ui/Toast';
 
 const CartPage = () => {
@@ -14,125 +14,70 @@ const CartPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
-
     const itemsPrice = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const taxPrice = Math.round(itemsPrice * 0.18);
     const shippingPrice = itemsPrice > 1000 ? 0 : 50; // Example logic
     const totalPrice = itemsPrice + taxPrice + shippingPrice;
 
-    const loadRazorpay = () => {
-        return new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-        });
-    };
 
     const handleCheckout = async () => {
-        if (!user) {
-            navigate('/login?redirect=cart');
-            return;
-        }
+    if (!user) {
+        navigate('/login?redirect=cart');
+        return;
+    }
 
-        // Use user's saved address or fallback (In a real app, force them to add one)
-        const shippingAddress = user.addresses && user.addresses.length > 0
+    const shippingAddress =
+        user.addresses && user.addresses.length > 0
             ? user.addresses[0]
             : null;
 
-        if (!shippingAddress) {
-            setToast({ message: "Please add a shipping address in your Profile first!", type: "error" });
-            setTimeout(() => navigate('/profile?tab=addresses'), 1500);
-            return;
-        }
+    if (!shippingAddress) {
+        setToast({
+            message: 'Please add a shipping address in your profile first!',
+            type: 'error'
+        });
+        setTimeout(() => navigate('/profile'), 1500);
+        return;
+    }
 
-        setIsLoading(true);
-        try {
-            const res = await loadRazorpay();
-            if (!res) {
-                setToast({ message: "Razorpay SDK failed to load", type: "error" });
-                return;
-            }
+    setIsLoading(true);
 
-            // 1. Create Razorpay Order (Backend)
-            // Backend expects: { orderItems, itemsPrice } and calculates the rest or takes it.
-            // Map cart items to match backend schema (product: ID, qty: quantity)
-            const formattedOrderItems = cart.map(item => ({
-                product: item._id || item.id,
-                name: item.name,
-                image: item.image,
-                price: item.price,
-                qty: item.quantity,
-                countInStock: item.countInStock
-            }));
+    try {
+        const formattedOrderItems = cart.map(item => ({
+            product: item._id || item.id,
+            name: item.name,
+            image: item.image,
+            price: item.price,
+            qty: item.quantity,
+            countInStock: item.countInStock
+        }));
 
-            const { data: orderResponse } = await axios.post(`${API_URL}/api/orders`, {
-                orderItems: formattedOrderItems,
-                itemsPrice,
-                taxPrice,
-                shippingPrice,
-                totalPrice
-            }, { headers: { Authorization: `Bearer ${user.token}` } });
+        await api.post('/api/orders', {
+            orderItems: formattedOrderItems,
+            shippingAddress,
+            itemsPrice,
+            taxPrice,
+            shippingPrice,
+            totalPrice
+        });
 
-            // 2. Initialize Razorpay Payment
-            const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_placeholder",
-                amount: orderResponse.amount, // Amount from backend (in paise)
-                currency: orderResponse.currency,
-                name: "Shri Ganpati",
-                description: "Art & Frames",
-                image: "/logo.png",
-                order_id: orderResponse.id, // Razorpay Order ID from backend
-                handler: async (response) => {
-                    try {
-                        // 3. Verify Payment & Save Order (Backend)
-                        const paymentData = {
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_signature: response.razorpay_signature,
-                            orderItems: formattedOrderItems, // Pass formatted items to save it
-                            shippingAddress: shippingAddress,
-                            itemsPrice,
-                            taxPrice,
-                            shippingPrice,
-                            totalPrice,
-                            paymentMethod: 'Razorpay'
-                        };
+        clearCart();
+        setToast({
+            message: 'Order placed successfully. Payment pending.',
+            type: 'success'
+        });
 
-                        await axios.post(`${API_URL}/api/orders/verify`, paymentData, {
-                            headers: { Authorization: `Bearer ${user.token}` }
-                        });
+        setTimeout(() => navigate('/profile'), 2000);
+    } catch (error) {
+        setToast({
+            message: error.response?.data?.message || 'Order failed. Try again.',
+            type: 'error'
+        });
+    } finally {
+        setIsLoading(false);
+    }
+};
 
-                        clearCart();
-                        setToast({ message: "Payment Successful!", type: "success" });
-                        setTimeout(() => navigate('/profile'), 2000);
-                    } catch (e) {
-                        console.error("Verification Error", e);
-                        setToast({ message: "Payment Verification Failed", type: "error" });
-                    }
-                },
-                prefill: {
-                    name: user.name,
-                    email: user.email,
-                    contact: user.phone || ''
-                },
-                theme: {
-                    color: "#b45309"
-                }
-            };
-
-            const rzp1 = new window.Razorpay(options);
-            rzp1.open();
-
-        } catch (error) {
-            console.error("Checkout Error", error);
-            setToast({ message: error.response?.data?.message || "Checkout failed. Try again.", type: "error" });
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     if (cart.length === 0) {
         return (
@@ -218,7 +163,7 @@ const CartPage = () => {
                         </Button>
 
                         <div className="flex items-center justify-center gap-2 text-xs text-stone-400">
-                            <Lock size={12} /> Secure Checkout via Razorpay
+                            <Lock size={12} /> Secure order placement
                         </div>
                     </div>
                 </div>

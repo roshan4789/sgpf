@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Truck, CheckCircle, Clock, MapPin, Phone, Mail } from 'lucide-react';
-import axios from 'axios';
+import api from 'src/services/api';
 
 const TrackOrderPage = () => {
     const [orderId, setOrderId] = useState('');
@@ -15,12 +15,12 @@ const TrackOrderPage = () => {
         setLoading(true);
 
         try {
-            const { data } = await axios.post('http://localhost:5000/api/orders/track', {
+            const { data } = await api.post('/api/orders/track', {
                 orderId: orderId.trim(),
             });
             setOrderData(data);
         } catch (err) {
-            setError(err.response?.data?.message || 'Order not found. Please check your order ID.');
+            setError(err.message || 'Order not found. Please check your order ID.');
         } finally {
             setLoading(false);
         }
@@ -242,11 +242,11 @@ const TrackOrderPage = () => {
                                     +91 98765 43210
                                 </a>
                                 <a
-                                    href="mailto:support@shriganpati.com"
+                                    href="mailto:support@sgpf.com"
                                     className="flex items-center gap-2 text-amber-700 hover:text-amber-800 font-medium"
                                 >
                                     <Mail className="w-5 h-5" />
-                                    support@shriganpati.com
+                                    support@sgpf.com
                                 </a>
                             </div>
                         </div>
