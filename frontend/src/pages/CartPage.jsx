@@ -81,7 +81,7 @@ const CartPage = () => {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_placeholder",
                 amount: orderResponse.amount, // Amount from backend (in paise)
                 currency: orderResponse.currency,
-                name: "Shri Ganpati",
+                name: "SGPF",
                 description: "Art & Frames",
                 image: "/logo.png",
                 order_id: orderResponse.id, // Razorpay Order ID from backend

@@ -242,11 +242,11 @@ const TrackOrderPage = () => {
                                     +91 98765 43210
                                 </a>
                                 <a
-                                    href="mailto:support@shriganpati.com"
+                                    href="mailto:support@sgpf.com"
                                     className="flex items-center gap-2 text-amber-700 hover:text-amber-800 font-medium"
                                 >
                                     <Mail className="w-5 h-5" />
-                                    support@shriganpati.com
+                                    support@sgpf.com
                                 </a>
                             </div>
                         </div>

@@ -87,8 +87,8 @@ const ContactPage = () => {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-stone-900 mb-1">Email</h3>
-                                    <a href="mailto:support@shriganpati.com" className="text-stone-600 hover:text-amber-600 transition-colors break-all">
-                                        support@shriganpati.com
+                                    <a href="mailto:support@sgpf.com" className="text-stone-600 hover:text-amber-600 transition-colors break-all">
+                                        support@sgpf.com
                                     </a>
                                     <p className="text-sm text-stone-500 mt-1">We'll reply within 24 hours</p>
                                 </div>
@@ -103,7 +103,7 @@ const ContactPage = () => {
                                 <div>
                                     <h3 className="font-bold text-stone-900 mb-1">Address</h3>
                                     <p className="text-stone-600">
-                                        Shri Ganpati Photo Frames<br />
+                                        SGPF Photo Frames<br />
                                         123 Market Street<br />
                                         Mumbai, Maharashtra 400001
                                     </p>

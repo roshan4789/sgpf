@@ -42,12 +42,12 @@ const Navbar = () => {
                 {/* LEFT SECTION - LOGO */}
                 <div className="flex items-center gap-3 flex-shrink-0">
                     <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity duration-200">
-                        <img 
-                            src={logo} 
-                            alt="Shri Ganpati" 
+                        <img
+                            src={logo}
+                            alt="SGPF"
                             className="w-12 h-12 object-contain rounded-lg"
                         />
-                        <span className="text-xl font-bold text-stone-900 tracking-tight">Shri Ganpati</span>
+                        <span className="text-xl font-bold text-stone-900 tracking-tight">SGPF</span>
                     </Link>
                 </div>
 
@@ -84,9 +84,16 @@ const Navbar = () => {
                                         <p className="text-xs text-stone-500 truncate">{user.email}</p>
                                     </div>
                                     <div className="py-1">
-                                        <Link to={user.isAdmin ? "/admin" : "/profile"} onClick={() => setIsProfileMenuOpen(false)} className="block px-4 py-2.5 hover:bg-stone-50 text-stone-700 text-sm transition-colors">
-                                            {user.isAdmin ? 'Admin Dashboard' : 'My Account'}
-                                        </Link>
+                                        {user.isAdmin && (
+                                            <Link to="/admin" onClick={() => setIsProfileMenuOpen(false)} className="block px-4 py-2.5 hover:bg-stone-50 text-stone-700 text-sm transition-colors">
+                                                Admin Dashboard
+                                            </Link>
+                                        )}
+                                        {!user.isAdmin && !user.isWorker && (
+                                            <Link to="/profile" onClick={() => setIsProfileMenuOpen(false)} className="block px-4 py-2.5 hover:bg-stone-50 text-stone-700 text-sm transition-colors">
+                                                My Account
+                                            </Link>
+                                        )}
                                         {!user.isAdmin && !user.isWorker && (
                                             <Link to="/cart" onClick={() => setIsProfileMenuOpen(false)} className="block px-4 py-2.5 hover:bg-stone-50 text-stone-700 text-sm transition-colors">
                                                 My Cart

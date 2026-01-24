@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
-const logAudit = require('../utils/auditLogger'); // Import Logger
+const logAudit = require('../utils/auditLogger');
 
 // 🛡️ Protect: Verifies the user is logged in
 const protect = asyncHandler(async (req, res, next) => {
@@ -30,12 +30,21 @@ const admin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
-    // 🚨 SECURITY AUDIT: Log unauthorized admin access attempts
     logAudit(req, 'UNAUTHORIZED_ADMIN_ACCESS', 'N/A', 'User tried to access Admin Route', 'FAILURE');
-    
     res.status(401);
     throw new Error('Not authorized as an admin');
   }
 };
 
-module.exports = { protect, admin };
+// 👷 Worker: Protected
+const worker = (req, res, next) => {
+  if (req.user && req.user.isWorker) {
+    next();
+  } else {
+    logAudit(req, 'UNAUTHORIZED_WORKER_ACCESS', 'N/A', 'User tried to access Worker Route', 'FAILURE');
+    res.status(401);
+    throw new Error('Not authorized as a worker');
+  }
+};
+
+module.exports = { protect, admin, worker };

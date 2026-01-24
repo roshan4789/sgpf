@@ -2,20 +2,110 @@ const asyncHandler = require('express-async-handler');
 const Product = require('../models/productModel');
 const logAudit = require('../utils/auditLogger'); // Import Logger
 
-// @desc    Fetch all products with Pagination
+// @desc    Fetch all products with Filtering & Sorting
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
   const pageSize = 8;
   const page = Number(req.query.pageNumber) || 1;
 
-  const count = await Product.countDocuments({});
-  
-  const products = await Product.find({})
+  // Filtering Logic
+  const keyword = req.query.keyword
+    ? {
+      name: {
+        $regex: req.query.keyword,
+        $options: 'i',
+      },
+    }
+    : {};
+
+  const categoryFilter = req.query.category && req.query.category !== 'All'
+    ? { mainCategory: req.query.category }
+    : {};
+
+  const subCategoryFilter = req.query.subcategory && req.query.subcategory !== 'All'
+    ? { category: req.query.subcategory }
+    : {};
+
+  const priceFilter = {};
+  if (req.query.minPrice || req.query.maxPrice) {
+    priceFilter.price = {};
+    if (req.query.minPrice) priceFilter.price.$gte = Number(req.query.minPrice);
+    if (req.query.maxPrice) priceFilter.price.$lte = Number(req.query.maxPrice);
+  }
+
+  // Combine all filters
+  const filter = { ...keyword, ...categoryFilter, ...subCategoryFilter, ...priceFilter };
+
+  // Sorting Logic
+  let sortOption = {};
+  switch (req.query.sort) {
+    case 'price-asc':
+      sortOption = { price: 1 };
+      break;
+    case 'price-desc':
+      sortOption = { price: -1 };
+      break;
+    case 'newest':
+      sortOption = { createdAt: -1 };
+      break;
+    case 'rating':
+      sortOption = { rating: -1 };
+      break;
+    default:
+      sortOption = { _id: -1 }; // Default to newest
+  }
+
+  const count = await Product.countDocuments(filter);
+
+  const products = await Product.find(filter)
+    .sort(sortOption)
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
   res.json({ products, page, pages: Math.ceil(count / pageSize) });
+});
+
+// @desc    Get category hierarchy
+// @route   GET /api/products/categories
+// @access  Public
+const getCategoryHierarchy = asyncHandler(async (req, res) => {
+  // Aggregate to find distinct Main Categories and their Sub Categories
+  const categories = await Product.aggregate([
+    {
+      $group: {
+        _id: '$mainCategory',
+        subCategories: { $addToSet: '$category' }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        mainCategory: '$_id',
+        subCategories: 1
+      }
+    },
+    { $sort: { mainCategory: 1 } }
+  ]);
+
+  res.json(categories);
+});
+
+// @desc    Get related products
+// @route   GET /api/products/:id/related
+// @access  Public
+const getRelatedProducts = asyncHandler(async (req, res) => {
+  const currentProduct = await Product.findById(req.params.id);
+  if (currentProduct) {
+    const related = await Product.find({
+      _id: { $ne: currentProduct._id },
+      mainCategory: currentProduct.mainCategory
+    }).limit(4);
+    res.json(related);
+  } else {
+    res.status(404);
+    throw new Error('Product not found');
+  }
 });
 
 // @desc    Fetch single product
@@ -53,17 +143,46 @@ const deleteProduct = asyncHandler(async (req, res) => {
 // @route   POST /api/products
 // @access  Private/Admin
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, category, countInStock } = req.body;
+  console.log('📦 Create product request received');
+  console.log('   Request body:', req.body);
+
+  const { name, price, description, image, category, mainCategory, countInStock, originalPrice, discount } = req.body;
+
+  // Validation
+  if (!name || name.trim() === '') {
+    console.error('❌ Validation failed: Product name is required');
+    res.status(400);
+    throw new Error('Product name is required');
+  }
+
+  if (!price || price === '' || Number(price) <= 0) {
+    console.error('❌ Validation failed: Valid price is required. Received:', price, 'Type:', typeof price);
+    res.status(400);
+    throw new Error('Valid price is required (must be greater than 0)');
+  }
+
+  if (!image || image.trim() === '') {
+    console.error('❌ Validation failed: Product image is required. Received:', image);
+    res.status(400);
+    throw new Error('Product image is required');
+  }
+
+  // mainCategory is required by the schema
+  const productMainCategory = mainCategory || category || 'Uncategorized';
+  const productCategory = category || 'Uncategorized';
 
   const product = new Product({
-    name: name || 'Sample Name',
-    price: price || 0,
-    user: req.user._id,
-    image: image || '/images/sample.jpg',
-    category: category || 'Sample Category',
-    countInStock: countInStock || 0,
+    name: name.trim(),
+    price: Number(price),
+    originalPrice: Number(originalPrice) || Number(price),
+    discount: Number(discount) || 0,
+    image: image.trim(),
+    mainCategory: productMainCategory,
+    category: productCategory,
+    countInStock: Number(countInStock) || 0,
     numReviews: 0,
-    description: description || 'Sample description',
+    rating: 0,
+    description: description || '',
   });
 
   const createdProduct = await product.save();
@@ -78,20 +197,43 @@ const createProduct = asyncHandler(async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 const updateProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, category, countInStock } = req.body;
+  const { name, price, description, image, category, mainCategory, countInStock, originalPrice, discount } = req.body;
 
   const product = await Product.findById(req.params.id);
 
   if (product) {
-    product.name = name || product.name;
-    product.price = price || product.price;
-    product.description = description || product.description;
-    product.image = image || product.image;
-    product.category = category || product.category;
-    product.countInStock = countInStock || product.countInStock;
+    if (name !== undefined) product.name = name.trim();
+    if (price !== undefined) {
+      if (price < 0) {
+        res.status(400);
+        throw new Error('Price cannot be negative');
+      }
+      product.price = Number(price);
+    }
+    if (originalPrice !== undefined) {
+      if (originalPrice < 0) {
+        res.status(400);
+        throw new Error('Original price cannot be negative');
+      }
+      product.originalPrice = Number(originalPrice);
+    }
+    if (discount !== undefined) {
+      product.discount = Number(discount);
+    }
+    if (description !== undefined) product.description = description;
+    if (image !== undefined) product.image = image.trim();
+    if (mainCategory !== undefined) product.mainCategory = mainCategory;
+    if (category !== undefined) product.category = category;
+    if (countInStock !== undefined) {
+      if (countInStock < 0) {
+        res.status(400);
+        throw new Error('Stock count cannot be negative');
+      }
+      product.countInStock = Number(countInStock);
+    }
 
     const updatedProduct = await product.save();
-    
+
     // 📝 AUDIT: Record update
     await logAudit(req, 'UPDATE_PRODUCT', updatedProduct._id, `Updated: ${updatedProduct.name}`);
 
@@ -140,6 +282,32 @@ const createProductReview = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Update product stock
+// @route   PUT /api/products/:id/stock
+// @access  Private/Worker/Admin
+const updateProductStock = asyncHandler(async (req, res) => {
+  const { countInStock } = req.body;
+  const product = await Product.findById(req.params.id);
+
+  if (product) {
+    if (countInStock === undefined || countInStock < 0) {
+      res.status(400);
+      throw new Error('Valid stock count is required');
+    }
+
+    product.countInStock = Number(countInStock);
+    const updatedProduct = await product.save();
+
+    // 📝 AUDIT: Record stock update
+    await logAudit(req, 'UPDATE_STOCK', updatedProduct._id, `Updated stock for ${updatedProduct.name} to ${countInStock}`);
+
+    res.json(updatedProduct);
+  } else {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+});
+
 // @desc    Get top rated products
 // @route   GET /api/products/top
 // @access  Public
@@ -157,4 +325,7 @@ module.exports = {
   updateProduct,
   createProductReview,
   getTopProducts,
+  getRelatedProducts,
+  getCategoryHierarchy,
+  updateProductStock,
 };
