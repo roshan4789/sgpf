@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../components/ui/Button';
-import axios from 'axios';
+import api from '../services/api';
 import Toast from '../components/ui/Toast';
 
 const ProfilePage = () => {
@@ -28,7 +28,7 @@ const ProfilePage = () => {
     const [states, setStates] = useState([]);
     const [loadingStates, setLoadingStates] = useState(false);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     useEffect(() => {
         if (!user) {
@@ -68,7 +68,7 @@ const ProfilePage = () => {
     const fetchOrders = async () => {
         if (!user) return;
         try {
-            const { data } = await axios.get(`${API_URL}/api/orders/myorders`, {
+            const { data } = await api.get(`/orders/myorders`, {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setOrders(data);
@@ -83,7 +83,7 @@ const ProfilePage = () => {
         }
         setWishlistLoading(true);
         try {
-            const response = await axios.get(`${API_URL}/api/users/wishlist`, {
+            const response = await api.get(`/users/wishlist`, {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setWishlist(response.data || []);
@@ -391,11 +391,11 @@ const ProfilePage = () => {
                                         />
                                         <div className="flex">
                                             <span className="inline-flex items-center px-3 border border-r-0 border-stone-200 bg-stone-50 text-stone-600 rounded-l-lg font-medium">+91</span>
-                                            <input 
-                                                placeholder="1234567890" 
-                                                className="flex-1 px-4 py-3 border border-stone-200 rounded-r-lg" 
-                                                value={newAddress.phone} 
-                                                onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })} 
+                                            <input
+                                                placeholder="1234567890"
+                                                className="flex-1 px-4 py-3 border border-stone-200 rounded-r-lg"
+                                                value={newAddress.phone}
+                                                onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })}
                                             />
                                         </div>
                                         <select

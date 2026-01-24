@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import FullPageLoader from '../components/ui/FullPageLoader';
 
 const AuthContext = createContext();
@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('ganpatiToken'));
     const [activeAuthAction, setActiveAuthAction] = useState(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     useEffect(() => {
         const loadUser = () => {
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
 
     // Token Expiry Interceptor
     useEffect(() => {
-        const interceptor = axios.interceptors.response.use(
+        const interceptor = api.interceptors.response.use(
             (response) => response,
             (error) => {
                 // If 401 and NOT login endpoint, then logout
@@ -47,12 +47,12 @@ export const AuthProvider = ({ children }) => {
                 return Promise.reject(error);
             }
         );
-        return () => axios.interceptors.response.eject(interceptor);
+        return () => api.interceptors.response.eject(interceptor);
     }, []);
 
     const login = async (email, password) => {
         try {
-            const { data } = await axios.post(`${API_URL}/api/users/login`, { email, password });
+            const { data } = await api.post(`/users/login`, { email, password });
 
             // Start Loader
             setActiveAuthAction({ type: 'LOGIN', text: 'Logging in...' });
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
-            const { data } = await axios.post(`${API_URL}/api/users`, { ...userData, isAdmin: false });
+            const { data } = await api.post(`/users`, { ...userData, isAdmin: false });
 
             // Start Loader
             setActiveAuthAction({ type: 'REGISTER', text: 'Creating Account...' });
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }) => {
 
     const updateProfile = async (updates) => {
         if (!user || !user.token) return;
-        const { data } = await axios.put(`${API_URL}/api/users/profile`, updates, {
+        const { data } = await api.put(`/users/profile`, updates, {
             headers: { Authorization: `Bearer ${user.token}` }
         });
         setUser(data);

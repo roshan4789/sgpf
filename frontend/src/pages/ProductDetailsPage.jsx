@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { ShoppingCart, Star, Heart, ArrowLeft, CheckCircle } from 'lucide-react';
 import { PageLoader } from '../components/ui/Loader';
 import { useCart } from '../context/CartContext';
@@ -23,7 +23,7 @@ const ProductDetailsPage = () => {
     const [isWishlisted, setIsWishlisted] = useState(false);
     const [wishlistLoading, setWishlistLoading] = useState(false);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     useEffect(() => {
         const loadProduct = async () => {
@@ -35,7 +35,7 @@ const ProductDetailsPage = () => {
                     setProduct(cached);
                     setMainImage(cached.image);
                 } else {
-                    const { data } = await axios.get(`${API_URL}/api/products/${id}`);
+                    const { data } = await api.get(`/products/${id}`);
                     setProduct(data);
                     setMainImage(data.image);
                 }
@@ -76,7 +76,7 @@ const ProductDetailsPage = () => {
 
         setWishlistLoading(true);
         try {
-            const { data } = await axios.put(`${API_URL}/api/users/wishlist`,
+            const { data } = await api.put(`/users/wishlist`,
                 { productId: product._id || product.id },
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );

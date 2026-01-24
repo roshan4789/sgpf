@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Truck, CheckCircle, Clock, MapPin, Phone, Mail } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 const TrackOrderPage = () => {
     const [orderId, setOrderId] = useState('');
@@ -15,7 +15,7 @@ const TrackOrderPage = () => {
         setLoading(true);
 
         try {
-            const { data } = await axios.post('http://localhost:5000/api/orders/track', {
+            const { data } = await api.post('/orders/track', {
                 orderId: orderId.trim(),
             });
             setOrderData(data);
