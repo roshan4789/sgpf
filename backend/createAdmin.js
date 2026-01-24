@@ -6,32 +6,53 @@ const User = require('./models/userModel');
 dotenv.config();
 connectDB();
 
-const createAdmin = async () => {
+const createAdminAndWorker = async () => {
   try {
-    // 1. DEFINE YOUR NEW CREDENTIALS HERE
+    // 1. ADMIN CREDENTIALS
     const newAdmin = {
       name: "Admin",
       username: "admin",
-      email: "admin@example.com",     // CHANGE THIS
-      phone: "9999999999",           // CHANGE THIS
-      password: "StrongPassword123!", // CHANGE THIS TO YOUR STRONG PASSWORD
+      email: "admin@ganpati.com",
+      phone: "9999999998",
+      password: "admin123",
       isAdmin: true,
+      isWorker: false,
     };
 
-    // 2. DELETE OLD ADMINS (Optional: Cleans up old accounts)
-    // This deletes ANY user with the same email or phone to prevent duplicates
-    await User.deleteMany({ email: newAdmin.email });
-    await User.deleteMany({ phone: newAdmin.phone });
+    // 2. WORKER CREDENTIALS
+    const newWorker = {
+      name: "Worker",
+      username: "worker",
+      email: "worker@ganpati.com",
+      phone: "9999999999",
+      password: "worker123",
+      isAdmin: false,
+      isWorker: true,
+    };
 
-    // 3. CREATE THE NEW ADMIN
-    const user = await User.create(newAdmin);
+    // 3. DELETE OLD ACCOUNTS (Prevents duplicates)
+    await User.deleteMany({ email: { $in: [newAdmin.email, newWorker.email] } });
+    await User.deleteMany({ phone: { $in: [newAdmin.phone, newWorker.phone] } });
 
-    console.log('-----------------------------------');
-    console.log('✅ ADMIN CREATED SUCCESSFULLY!');
-    console.log(`👤 Name: ${user.name}`);
-    console.log(`📧 Email: ${user.email}`);
-    console.log(`🔑 Password: ${newAdmin.password}`);
-    console.log('-----------------------------------');
+    // 4. CREATE ADMIN AND WORKER
+    const admin = await User.create(newAdmin);
+    const worker = await User.create(newWorker);
+
+    console.log('\n===================================');
+    console.log('✅ ADMIN & WORKER CREATED!');
+    console.log('===================================\n');
+    
+    console.log('👨‍💼 ADMIN ACCOUNT:');
+    console.log(`   📧 Email: ${admin.email}`);
+    console.log(`   🔑 Password: ${newAdmin.password}`);
+    console.log(`   📱 Phone: ${admin.phone}\n`);
+    
+    console.log('👷 WORKER ACCOUNT:');
+    console.log(`   📧 Email: ${worker.email}`);
+    console.log(`   🔑 Password: ${newWorker.password}`);
+    console.log(`   📱 Phone: ${worker.phone}\n`);
+    
+    console.log('===================================\n');
 
     process.exit();
   } catch (error) {
@@ -40,4 +61,4 @@ const createAdmin = async () => {
   }
 };
 
-createAdmin();
+createAdminAndWorker();

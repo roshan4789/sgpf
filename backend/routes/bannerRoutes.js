@@ -12,9 +12,9 @@ router.get('/', async (req, res) => {
 // Update Banners (Admin Only)
 // We will use a bulk update/replace logic for simplicity
 router.post('/', protect, admin, async (req, res) => {
-    await Banner.deleteMany({}); // Clear old banners
-    const banners = await Banner.insertMany(req.body); // Insert new ones
-    res.json(banners);
+  await Banner.deleteMany({}); // Clear old banners
+  const banners = await Banner.insertMany(req.body); // Insert new ones
+  res.json(banners);
 });
 
 module.exports = router;
