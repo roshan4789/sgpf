@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { Package, Users, BarChart3, Settings, Plus, Edit, Trash2, Search, X, Image as ImageIcon, CheckCircle, Upload, LogOut, Box, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -80,7 +80,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     useEffect(() => {
         if (!user || !user.isAdmin) {
@@ -95,9 +95,9 @@ const AdminDashboard = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const [prodRes, ordRes, banRes] = await Promise.all([
-                axios.get(`${API_URL}/api/products?pageNumber=1`, config),
-                axios.get(`${API_URL}/api/orders`, config),
-                axios.get(`${API_URL}/api/banners`, config)
+                api.get(`/products?pageNumber=1`, config),
+                api.get(`/orders`, config),
+                api.get(`/banners`, config)
             ]);
 
             // Handle different product response structure
@@ -127,7 +127,7 @@ const AdminDashboard = () => {
         formData.append('image', file);
         try {
             console.log('📤 Sending upload request to:', `${API_URL}/api/upload`);
-            const { data } = await axios.post(`${API_URL}/api/upload`, formData, {
+            const { data } = await api.post(`/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${user.token}` }
             });
 
@@ -139,15 +139,10 @@ const AdminDashboard = () => {
 
             if (imagePath.startsWith('http')) {
                 fullImageUrl = imagePath;
-            } else if (imagePath.startsWith('/uploads/')) {
-                // Backend returns /uploads/filename, construct full URL
-                fullImageUrl = `${API_URL}${imagePath}`;
-            } else if (imagePath.startsWith('uploads/')) {
-                // Backend returns uploads/filename, add leading slash
-                fullImageUrl = `${API_URL}/${imagePath}`;
             } else {
-                // Fallback
-                fullImageUrl = `${API_URL}/${imagePath}`;
+                // Assume relative path works or backend returns correct relative path
+                // If path starts with /, it's relative to root.
+                fullImageUrl = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
             }
 
             console.log('✅ Final image URL:', fullImageUrl);
@@ -186,10 +181,10 @@ const AdminDashboard = () => {
 
             if (isEditingProduct) {
                 // FIXED: Use PUT for editing
-                await axios.put(`${API_URL}/api/products/${editingProductId}`, payload, config);
+                await api.put(`/products/${editingProductId}`, payload, config);
                 setToast({ message: "Product Updated!", type: "success" });
             } else {
-                await axios.post(`${API_URL}/api/products`, payload, config);
+                await api.post(`/products`, payload, config);
                 setToast({ message: "Product Created!", type: "success" });
             }
             setIsProductModalOpen(false);
@@ -216,7 +211,7 @@ const AdminDashboard = () => {
     const handleDeleteProduct = async (id) => {
         if (!window.confirm("Are you sure?")) return;
         try {
-            await axios.delete(`${API_URL}/api/products/${id}`, { headers: { Authorization: `Bearer ${user.token}` } });
+            await api.delete(`/products/${id}`, { headers: { Authorization: `Bearer ${user.token}` } });
             setToast({ message: "Product Deleted", type: "success" });
             fetchDashboardData();
         } catch (e) {
@@ -268,7 +263,7 @@ const AdminDashboard = () => {
             // Clean up ID from form before sending? The backend might just ignore it or re-generate.
             // Actually, let's just send the array.
 
-            await axios.post(`${API_URL}/api/banners`, updatedBanners, config);
+            await api.post(`/banners`, updatedBanners, config);
             setToast({ message: "Banners Updated!", type: "success" });
             fetchDashboardData();
             setIsBannerModalOpen(false);
@@ -282,7 +277,7 @@ const AdminDashboard = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const updatedBanners = banners.filter((_, i) => i !== index);
-            await axios.post(`${API_URL}/api/banners`, updatedBanners, config);
+            await api.post(`/banners`, updatedBanners, config);
             setToast({ message: "Banner Deleted", type: "success" });
             fetchDashboardData();
         } catch (e) {
@@ -314,7 +309,7 @@ const AdminDashboard = () => {
         formData.append('image', file);
         try {
             console.log('📤 Sending upload request to:', `${API_URL}/api/upload`);
-            const { data } = await axios.post(`${API_URL}/api/upload`, formData, {
+            const { data } = await api.post(`/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${user.token}` }
             });
 
@@ -326,15 +321,10 @@ const AdminDashboard = () => {
 
             if (imagePath.startsWith('http')) {
                 fullImageUrl = imagePath;
-            } else if (imagePath.startsWith('/uploads/')) {
-                // Backend returns /uploads/filename, construct full URL
-                fullImageUrl = `${API_URL}${imagePath}`;
-            } else if (imagePath.startsWith('uploads/')) {
-                // Backend returns uploads/filename, add leading slash
-                fullImageUrl = `${API_URL}/${imagePath}`;
             } else {
-                // Fallback
-                fullImageUrl = `${API_URL}/${imagePath}`;
+                // Assume relative path works or backend returns correct relative path
+                // If path starts with /, it's relative to root.
+                fullImageUrl = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
             }
 
             console.log('✅ Final image URL:', fullImageUrl);
@@ -369,11 +359,11 @@ const AdminDashboard = () => {
             // Try different endpoint formats
             let response;
             try {
-                response = await axios.put(`${API_URL}/api/products/${productId}/stock`, { countInStock: Number(newStock) }, config);
+                response = await api.put(`/products/${productId}/stock`, { countInStock: Number(newStock) }, config);
             } catch (endpointError) {
                 console.log('First endpoint failed, trying alternative...');
                 // Try alternative endpoint
-                response = await axios.put(`${API_URL}/api/products/stock/${productId}`, { countInStock: Number(newStock) }, config);
+                response = await api.put(`/products/stock/${productId}`, { countInStock: Number(newStock) }, config);
             }
 
             setToast({ message: "Stock Updated Successfully", type: "success" });

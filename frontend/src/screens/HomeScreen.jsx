@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { Link } from 'react-router-dom';
 
 const HomeScreen = () => {
@@ -9,7 +9,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data } = await axios.get('/api/products');
+        const { data } = await api.get('/products');
         setProducts(data);
         setLoading(false);
       } catch (error) {
@@ -25,17 +25,17 @@ const HomeScreen = () => {
   return (
     <div className="container mx-auto p-4 mt-5">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Latest Products</h1>
-      
+
       {/* Product Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((product) => (
           <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
-            
+
             {/* Clickable Image */}
             <Link to={`/product/${product._id}`}>
-              <img 
-                src={product.image} 
-                alt={product.name} 
+              <img
+                src={product.image}
+                alt={product.name}
                 className="w-full h-48 object-cover object-center"
               />
             </Link>
@@ -50,13 +50,13 @@ const HomeScreen = () => {
               <div className="flex items-center justify-between mt-3">
                 <span className="text-xl font-bold text-gray-900">₹{product.price}</span>
                 {product.countInStock > 0 ? (
-                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-green-600 bg-green-200">
-                      In Stock
-                    </span>
+                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-green-600 bg-green-200">
+                    In Stock
+                  </span>
                 ) : (
-                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-red-600 bg-red-200">
-                      Out of Stock
-                    </span>
+                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-red-600 bg-red-200">
+                    Out of Stock
+                  </span>
                 )}
               </div>
             </div>

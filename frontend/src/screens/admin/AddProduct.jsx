@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 
 const AddProduct = () => {
   // 1. State for form fields
@@ -13,7 +13,7 @@ const AddProduct = () => {
   // 2. Image Upload Handler (Enhanced with validation and error handling)
   const uploadFileHandler = async (e) => {
     const file = e.target.files[0];
-    
+
     if (!file) {
       alert('Please select a file');
       return;
@@ -44,26 +44,20 @@ const AddProduct = () => {
         },
       };
 
-      const API_URL = 'http://127.0.0.1:5000';
-      const { data } = await axios.post(`${API_URL}/api/upload`, formData, config);
+      const { data } = await api.post(`/upload`, formData, config);
 
       // Handle both old string format and new object format
       const imagePath = typeof data === 'string' ? data : (data.path || data.url || data);
       let fullImageUrl;
-      
+
       if (imagePath.startsWith('http')) {
         fullImageUrl = imagePath;
-      } else if (imagePath.startsWith('/uploads/')) {
-        // Backend returns /uploads/filename, construct full URL
-        fullImageUrl = `${API_URL}${imagePath}`;
-      } else if (imagePath.startsWith('uploads/')) {
-        // Backend returns uploads/filename, add leading slash
-        fullImageUrl = `${API_URL}/${imagePath}`;
       } else {
-        // Fallback
-        fullImageUrl = `${API_URL}/${imagePath}`;
+        // Assume relative path works or backend returns correct relative path
+        // If path starts with /, it's relative to root.
+        fullImageUrl = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
       }
-      
+
       setImage(fullImageUrl);
       alert('Image uploaded successfully!');
       console.log('Upload successful:', fullImageUrl);
@@ -87,8 +81,8 @@ const AddProduct = () => {
         },
       };
 
-      await axios.post(
-        '/api/products',
+      await api.post(
+        '/products',
         { name, price, image, category, description },
         config
       );
@@ -96,7 +90,7 @@ const AddProduct = () => {
       alert('Product Added Successfully!');
       // Optional: Redirect to product list
       // navigate('/admin/productlist'); 
-      
+
     } catch (error) {
       alert('Error creating product');
     }
@@ -105,9 +99,9 @@ const AddProduct = () => {
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Add New Product</h2>
-      
+
       <form onSubmit={submitHandler} className="space-y-4">
-        
+
         {/* Product Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -141,9 +135,9 @@ const AddProduct = () => {
             {/* Image Preview */}
             {image && (
               <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <img 
-                  src={image} 
-                  alt="Product preview" 
+                <img
+                  src={image}
+                  alt="Product preview"
                   className="w-20 h-20 object-cover rounded-lg border border-gray-300"
                   onError={(e) => {
                     console.error('Image failed to load:', image);
@@ -153,7 +147,7 @@ const AddProduct = () => {
                 <span className="text-sm text-green-600 font-medium">✓ Image uploaded</span>
               </div>
             )}
-            
+
             {/* Upload Controls */}
             <div className="flex items-center gap-4">
               <input
@@ -165,10 +159,10 @@ const AddProduct = () => {
               />
               <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
                 <span>Choose File</span>
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  onChange={uploadFileHandler} 
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={uploadFileHandler}
                   accept="image/*"
                 />
               </label>

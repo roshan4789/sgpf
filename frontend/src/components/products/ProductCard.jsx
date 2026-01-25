@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, Eye, Bell, Star, CheckCircle, Heart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
+import api from '../../services/api';
 import Toast from '../ui/Toast';
 
 const ProductCard = ({ product }) => {
@@ -15,7 +15,7 @@ const ProductCard = ({ product }) => {
     const [wishlistLoading, setWishlistLoading] = useState(false);
 
     const isSoldOut = product.countInStock === 0;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     useEffect(() => {
         if (user && user.wishlist) {
@@ -39,7 +39,7 @@ const ProductCard = ({ product }) => {
             return;
         }
         try {
-            await axios.post(`${API_URL}/api/products/notify`, { userId: user._id, productId: product._id || product.id });
+            await api.post(`/products/notify`, { userId: user._id, productId: product._id || product.id });
             setToast({ message: "We will notify you when back in stock!", type: "success" });
         } catch (error) {
             setToast({ message: "Notification request sent!", type: "success" });
@@ -49,7 +49,7 @@ const ProductCard = ({ product }) => {
     const handleWishlist = async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (!user) {
             setToast({ message: "Please login to add to wishlist", type: "info" });
             return;
@@ -57,24 +57,24 @@ const ProductCard = ({ product }) => {
 
         setWishlistLoading(true);
         try {
-            const { data } = await axios.put(`${API_URL}/api/users/wishlist`, 
-                { productId: product._id || product.id }, 
+            const { data } = await api.put(`/users/wishlist`,
+                { productId: product._id || product.id },
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
-            
+
             setIsWishlisted(!isWishlisted);
-            setToast({ 
-                message: isWishlisted ? "Removed from wishlist" : "Added to wishlist", 
-                type: "success" 
+            setToast({
+                message: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
+                type: "success"
             });
-            
+
             // Update user in localStorage to reflect wishlist changes
             const updatedUser = { ...user, wishlist: data };
             localStorage.setItem('ganpatiUser', JSON.stringify(updatedUser));
-            
+
             // Trigger a custom event to notify other components
             window.dispatchEvent(new CustomEvent('wishlistUpdated', { detail: data }));
-            
+
         } catch (error) {
             setToast({ message: "Failed to update wishlist", type: "error" });
         } finally {

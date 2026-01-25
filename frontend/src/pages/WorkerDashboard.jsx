@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { Package, CheckCircle, Truck, Clock, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +15,7 @@ const WorkerDashboard = () => {
 
     const [orders, setOrders] = useState([]);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     useEffect(() => {
         if (!user || (!user.isWorker && !user.isAdmin)) {
@@ -29,7 +29,7 @@ const WorkerDashboard = () => {
         setLoading(true);
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const ordRes = await axios.get(`${API_URL}/api/orders/worker/pending`, config);
+            const ordRes = await api.get(`/orders/worker/pending`, config);
             setOrders(ordRes.data);
         } catch (e) {
             console.error('Failed to load data:', e);
@@ -42,7 +42,7 @@ const WorkerDashboard = () => {
     const handleUpdateOrderStatus = async (id, status) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.put(`${API_URL}/api/orders/${id}/status`, { status }, config);
+            await api.put(`/orders/${id}/status`, { status }, config);
             fetchData();
             setToast({ message: "Order Updated", type: "success" });
         } catch (e) {

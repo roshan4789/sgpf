@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 const ShopContext = createContext();
 
 export const useShop = () => useContext(ShopContext);
 
 export const ShopProvider = ({ children }) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     const [products, setProducts] = useState([]);
     const [banners, setBanners] = useState([]);
@@ -28,7 +28,7 @@ export const ShopProvider = ({ children }) => {
             if (maxPrice) query += `&maxPrice=${maxPrice}`;
             if (search) query += `&keyword=${search}`;
 
-            const { data } = await axios.get(`${API_URL}/api/products${query}`);
+            const { data } = await api.get(`/products${query}`);
             const newProducts = Array.isArray(data) ? data : (data.products || []);
             // Return data to caller for handling (like appending vs replacing)
             return { products: newProducts, pages: data.pages || 1 };
@@ -42,7 +42,7 @@ export const ShopProvider = ({ children }) => {
 
     const fetchBanners = async () => {
         try {
-            const { data } = await axios.get(`${API_URL}/api/banners`);
+            const { data } = await api.get(`/banners`);
             if (data && data.length > 0) {
                 setBanners(data);
             }
@@ -58,7 +58,7 @@ export const ShopProvider = ({ children }) => {
     // Also helper to get related products
     const fetchRelatedProducts = async (id) => {
         try {
-            const { data } = await axios.get(`${API_URL}/api/products/${id}/related`);
+            const { data } = await api.get(`/products/${id}/related`);
             return data;
         } catch (error) {
             return [];

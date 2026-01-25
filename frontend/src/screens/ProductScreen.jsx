@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 
 const ProductScreen = () => {
   const { id } = useParams(); // Get the ID from the URL (e.g., /product/123)
@@ -11,7 +11,7 @@ const ProductScreen = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data } = await axios.get(`/api/products/${id}`);
+        const { data } = await api.get(`/products/${id}`);
         setProduct(data);
         setLoading(false);
       } catch (error) {
@@ -26,7 +26,7 @@ const ProductScreen = () => {
   const checkoutHandler = async () => {
     try {
       // A. Create Order on Backend
-      const { data: { data: order } } = await axios.post("/api/payment/orders", {
+      const { data: { data: order } } = await api.post("/payment/orders", {
         amount: product.price, // Send the product price
       });
 
@@ -38,12 +38,12 @@ const ProductScreen = () => {
         name: "My E-Commerce Store",
         description: `Purchase of ${product.name}`,
         image: "https://your-logo-url.com/logo.png",
-        order_id: order.id, 
+        order_id: order.id,
         handler: async function (response) {
           // C. Verify Payment on Backend
           try {
-            const verifyUrl = "/api/payment/verify";
-            const { data } = await axios.post(verifyUrl, response);
+            const verifyUrl = "/payment/verify";
+            const { data } = await api.post(verifyUrl, response);
             alert("Payment Successful! Order Placed.");
             // Here you would typically save the order to your 'Orders' database
           } catch (error) {
@@ -70,20 +70,20 @@ const ProductScreen = () => {
   return (
     <div className="container mx-auto mt-10 p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        
+
         {/* Left Column: Image */}
         <div className="flex justify-center items-start">
-          <img 
-            src={product.image} 
-            alt={product.name} 
-            className="w-full max-w-lg rounded-lg shadow-lg object-cover" 
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full max-w-lg rounded-lg shadow-lg object-cover"
           />
         </div>
 
         {/* Right Column: Details & Action */}
         <div className="space-y-6">
           <h1 className="text-4xl font-bold text-gray-900">{product.name}</h1>
-          
+
           <div className="border-b pb-4">
             <p className="text-gray-600 text-lg">Category: {product.category}</p>
             <p className="text-gray-500 mt-4">{product.description}</p>
@@ -107,8 +107,8 @@ const ProductScreen = () => {
               onClick={checkoutHandler}
               disabled={product.countInStock === 0}
               className={`w-full py-4 rounded-lg text-white font-bold text-lg transition duration-300 
-                ${product.countInStock > 0 
-                  ? 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl' 
+                ${product.countInStock > 0
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl'
                   : 'bg-gray-400 cursor-not-allowed'}`}
             >
               {product.countInStock > 0 ? 'BUY NOW' : 'OUT OF STOCK'}

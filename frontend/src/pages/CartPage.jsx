@@ -4,7 +4,7 @@ import { ShoppingCart, ArrowRight, Trash2, Plus, Minus, ChevronLeft, Lock } from
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
-import axios from 'axios';
+import api from '../services/api';
 import Toast from '../components/ui/Toast';
 
 const CartPage = () => {
@@ -14,7 +14,7 @@ const CartPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     const itemsPrice = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const taxPrice = Math.round(itemsPrice * 0.18);
@@ -68,7 +68,7 @@ const CartPage = () => {
                 countInStock: item.countInStock
             }));
 
-            const { data: orderResponse } = await axios.post(`${API_URL}/api/orders`, {
+            const { data: orderResponse } = await api.post(`/orders`, {
                 orderItems: formattedOrderItems,
                 itemsPrice,
                 taxPrice,
@@ -101,7 +101,7 @@ const CartPage = () => {
                             paymentMethod: 'Razorpay'
                         };
 
-                        await axios.post(`${API_URL}/api/orders/verify`, paymentData, {
+                        await api.post(`/orders/verify`, paymentData, {
                             headers: { Authorization: `Bearer ${user.token}` }
                         });
 

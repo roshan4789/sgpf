@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
@@ -15,7 +15,7 @@ export const CartProvider = ({ children }) => {
         } catch (e) { return []; }
     });
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 
     // Sync to LocalStorage
     useEffect(() => {
@@ -33,7 +33,7 @@ export const CartProvider = ({ children }) => {
 
             // We'll let the Login page/AuthContext handle the initial fetch/set if needed, 
             // but here we just sync updates TO backend.
-            axios.put(`${API_URL}/api/users/profile`, { cart }, { headers: { Authorization: `Bearer ${user.token}` } })
+            api.put(`/users/profile`, { cart }, { headers: { Authorization: `Bearer ${user.token}` } })
                 .catch(err => console.log("Sync error", err));
         }
     }, [cart, user]);
