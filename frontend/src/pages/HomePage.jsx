@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import api from '../services/api';
 import { Filter, Package, ChevronDown } from 'lucide-react';
 import { SectionLoader, Spinner } from '../components/ui/Loader';
 import { useShop } from '../context/ShopContext';
@@ -22,7 +23,6 @@ const HomePage = () => {
 
     // Categories State
     const [categories, setCategories] = useState([]);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
     // Initial Filters from URL
     const initialFilters = {
@@ -42,8 +42,7 @@ const HomePage = () => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await fetch(`${API_URL}/api/products/categories`);
-                const data = await response.json();
+                const { data } = await api.get('/products/categories');
                 setCategories(data);
             } catch (error) {
                 console.error("Failed to fetch categories", error);

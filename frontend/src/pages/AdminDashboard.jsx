@@ -120,13 +120,13 @@ const AdminDashboard = () => {
             filename: file.name,
             size: file.size,
             type: file.type,
-            apiUrl: API_URL
+            type: file.type
         });
 
         const formData = new FormData();
         formData.append('image', file);
         try {
-            console.log('📤 Sending upload request to:', `${API_URL}/api/upload`);
+            console.log('📤 Sending upload request to endpoint');
             const { data } = await api.post(`/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${user.token}` }
             });
@@ -176,7 +176,6 @@ const AdminDashboard = () => {
             console.log('💾 Saving product:', {
                 isEditing: isEditingProduct,
                 payload: payload,
-                apiUrl: API_URL
             });
 
             if (isEditingProduct) {
@@ -302,13 +301,13 @@ const AdminDashboard = () => {
             filename: file.name,
             size: file.size,
             type: file.type,
-            apiUrl: API_URL
+            type: file.type
         });
 
         const formData = new FormData();
         formData.append('image', file);
         try {
-            console.log('📤 Sending upload request to:', `${API_URL}/api/upload`);
+            console.log('📤 Sending upload request to endpoint');
             const { data } = await api.post(`/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${user.token}` }
             });
